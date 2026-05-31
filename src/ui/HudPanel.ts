@@ -17,7 +17,9 @@ export class HudPanel {
     constructor(
         scene: Phaser.Scene,
 
-        onDropBall: () => void
+        onDropBall: () => void,
+
+        onShowStatistics: () => void
     ) {
 
         scene.add.text(
@@ -71,6 +73,16 @@ export class HudPanel {
             48,
             "DROP BALL",
             onDropBall
+        );
+
+        new UIButton(
+            scene,
+            20,
+            280,
+            180,
+            48,
+            "STATISTICS",
+            onShowStatistics
         );
     }
 

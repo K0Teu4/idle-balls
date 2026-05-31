@@ -11,6 +11,7 @@ import {
     SLOT_VALUES
 } from "../config/GameConfig";
 
+import { StatisticsManager } from "../managers/StatisticsManager";
 import { EconomyManager } from "../managers/EconomyManager";
 import { BallManager } from "../managers/BallManager";
 import { AutoDropperManager } from "../managers/AutoDropperManager";
@@ -21,6 +22,7 @@ import { SaveManager } from "../managers/SaveManager";
 
 import { HudPanel } from "../ui/HudPanel";
 import { ShopPanel } from "../ui/ShopPanel";
+import { StatisticsWindow } from "../ui/StatisticsWindow";
 
 export class GameScene extends Phaser.Scene {
 
@@ -43,12 +45,18 @@ export class GameScene extends Phaser.Scene {
 
     private goldenBall =
         new GoldenBallManager();
+    
+    private statistics =
+        new StatisticsManager();
 
     private hudPanel!:
         HudPanel;
 
     private shopPanel!:
         ShopPanel;
+
+    private statisticsWindow!:
+        StatisticsWindow;
 
     private nextSpawnTime = 0;
 
@@ -86,10 +94,41 @@ export class GameScene extends Phaser.Scene {
             this.ballCapacity.getCapacity()
         );
 
+        this.statisticsWindow =
+            new StatisticsWindow(
+                this
+            );
+
         this.hudPanel =
             new HudPanel(
                 this,
-                () => this.trySpawnBall()
+                () => this.trySpawnBall(),
+                () => {
+
+                    const content = [
+
+                    "STATISTICS",
+
+                    "",
+
+                    `Total Money Earned: ${this.statistics.getTotalMoneyEarned()}`,
+
+                    `Balls Dropped: ${this.statistics.getTotalBallsDropped()}`,
+
+                    `Golden Balls Dropped: ${this.statistics.getTotalGoldenBallsDropped()}`,
+
+                    "",
+
+                    `Current Money: ${Math.floor(
+                        this.economy.getMoney()
+                    )}`
+
+                    ].join("\n");
+
+                    this.statisticsWindow.show(
+                        content
+                    );
+                }
             );
 
         this.shopPanel =
@@ -348,6 +387,18 @@ export class GameScene extends Phaser.Scene {
                 GAME_AREA.y + 50,
                 type
             );
+
+        if (ball) {
+
+            this.statistics.addBallDropped();
+
+            if (
+                type === BallType.Golden
+            ) {
+
+                this.statistics.addGoldenBallDropped();
+            }
+        }
 
         return ball !== null;
     }
@@ -652,6 +703,10 @@ export class GameScene extends Phaser.Scene {
                     reward
                 );
 
+                this.statistics.addMoneyEarned(
+                    reward
+                );
+
                 FloatingText.create(
                     this,
                     ballX,
@@ -727,6 +782,10 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.economy.addMoney(
+            income
+        );
+        
+        this.statistics.addMoneyEarned(
             income
         );
 
@@ -810,7 +869,7 @@ export class GameScene extends Phaser.Scene {
 
         SaveManager.save({
 
-            version: 2,
+            version: 3,
 
             money:
                 this.economy.getMoney(),
@@ -826,6 +885,15 @@ export class GameScene extends Phaser.Scene {
 
             goldenBallLevel:
                 this.goldenBall.getLevel(),
+
+            totalMoneyEarned:
+                this.statistics.getTotalMoneyEarned(),
+
+            totalBallsDropped:
+                this.statistics.getTotalBallsDropped(),
+
+            totalGoldenBallsDropped:
+                this.statistics.getTotalGoldenBallsDropped(),
 
             lastSaveTime:
                 Date.now()
@@ -859,6 +927,15 @@ export class GameScene extends Phaser.Scene {
 
         this.goldenBall.setLevel(
             save.goldenBallLevel
+        );
+        
+        this.statistics.setData(
+
+        save.totalMoneyEarned,
+
+        save.totalBallsDropped,
+
+        save.totalGoldenBallsDropped
         );
 
         return save.lastSaveTime;

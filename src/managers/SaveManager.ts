@@ -12,6 +12,12 @@ export interface SaveData {
 
     goldenBallLevel: number;
 
+    totalMoneyEarned: number;
+
+    totalBallsDropped: number;
+
+    totalGoldenBallsDropped: number;
+
     lastSaveTime: number;
 }
 
@@ -45,6 +51,17 @@ export class SaveManager {
 
             const parsed =
                 JSON.parse(raw);
+
+            if (
+                typeof parsed !== "object" ||
+                parsed === null
+            ) {
+                return null;
+            }
+
+            parsed.totalMoneyEarned ??= 0;
+            parsed.totalBallsDropped ??= 0;
+            parsed.totalGoldenBallsDropped ??= 0;
 
             if (
                 !this.isValidSave(
@@ -95,6 +112,15 @@ export class SaveManager {
                 "number" &&
 
             typeof save.goldenBallLevel ===
+                "number" &&
+
+            typeof save.totalMoneyEarned ===
+                "number" &&
+
+            typeof save.totalBallsDropped ===
+                "number" &&
+
+            typeof save.totalGoldenBallsDropped ===
                 "number" &&
 
             typeof save.lastSaveTime ===

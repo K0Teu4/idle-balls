@@ -1,0 +1,12 @@
+export const EconomyConfig = {
+
+    BALL_COST: 1,
+
+    MAX_BALLS: 100,
+
+    AUTO_DROPPER_BASE_COST: 25,
+    AUTO_DROPPER_COST_MULT: 2,
+
+    MULTIPLIER_BASE_COST: 50,
+    MULTIPLIER_COST_MULT: 2
+};

@@ -1,8 +1,8 @@
 export const GAME_AREA = {
-    x: 290,
+    x: 260,
     y: 30,
 
-    width: 700,
+    width: 650,
     height: 650
 };
 

@@ -16,6 +16,9 @@ import { AutoDropperManager } from "../managers/AutoDropperManager";
 import { MultiplierManager } from "../managers/MultiplierManager";
 import { SaveManager } from "../managers/SaveManager";
 
+import { HudPanel } from "../ui/HudPanel";
+import { ShopPanel } from "../ui/ShopPanel";
+
 export class GameScene extends Phaser.Scene {
 
     private slots: Slot[] = [];
@@ -32,23 +35,11 @@ export class GameScene extends Phaser.Scene {
     private multiplier =
         new MultiplierManager();
 
-    private moneyText!:
-        Phaser.GameObjects.Text;
+    private hudPanel!:
+        HudPanel;
 
-    private dropButton!:
-        Phaser.GameObjects.Text;
-
-    private autoDropperText!:
-        Phaser.GameObjects.Text;
-
-    private autoDropperButton!:
-        Phaser.GameObjects.Text;
-
-    private multiplierText!:
-        Phaser.GameObjects.Text;
-
-    private multiplierButton!:
-        Phaser.GameObjects.Text;
+    private shopPanel!:
+        ShopPanel;
 
     private nextSpawnTime = 0;
 
@@ -66,12 +57,23 @@ export class GameScene extends Phaser.Scene {
 
         this.createSlots();
 
-        this.createHud();
-
         this.loadSave();
 
         this.ballManager =
             new BallManager(this);
+
+        this.hudPanel =
+            new HudPanel(
+                this,
+                () => this.trySpawnBall()
+            );
+
+        this.shopPanel =
+            new ShopPanel(
+                this,
+                () => this.buyAutoDropper(),
+                () => this.buyMultiplier()
+            );
 
         this.refreshSlotLabels();
 
@@ -91,28 +93,24 @@ export class GameScene extends Phaser.Scene {
 
     private updateHud(): void {
 
-        this.moneyText.setText(
-            `Money: ${Math.floor(
-                this.economy.getMoney()
-            )}`
+        this.hudPanel.update(
+
+            this.economy.getMoney(),
+
+            this.ballManager.getBallCount(),
+
+            this.ballManager.getMaxBalls()
         );
 
-        this.autoDropperText.setText(
-            [
-                "Auto Dropper",
-                `Level: ${this.autoDropper.getLevel()}`,
-                `Cost: ${this.autoDropper.getCost()}`,
-                `Rate: ${this.autoDropper.getBallsPerSecond()} balls/sec`
-            ].join("\n")
-        );
+        this.shopPanel.update(
 
-        this.multiplierText.setText(
-            [
-                "Income Multiplier",
-                `Level: ${this.multiplier.getLevel()}`,
-                `Value: x${this.multiplier.getMultiplier()}`,
-                `Cost: ${this.multiplier.getCost()}`
-            ].join("\n")
+            this.autoDropper.getLevel(),
+            this.autoDropper.getCost(),
+            this.autoDropper.getBallsPerSecond(),
+
+            this.multiplier.getLevel(),
+            this.multiplier.getMultiplier(),
+            this.multiplier.getCost()
         );
     }
 
@@ -135,15 +133,15 @@ export class GameScene extends Phaser.Scene {
         }
 
         if (
-            !this.economy.spendMoney(
-                this.BALL_COST
-            )
+            !this.ballManager.canSpawnBall()
         ) {
             return;
         }
 
         if (
-            !this.ballManager.canSpawnBall()
+            !this.economy.spendMoney(
+                this.BALL_COST
+            )
         ) {
             return;
         }
@@ -153,142 +151,6 @@ export class GameScene extends Phaser.Scene {
         this.nextAutoDrop =
             this.time.now +
             1000 / rate;
-    }
-
-    private createHud(): void {
-
-        this.moneyText =
-            this.add.text(
-                20,
-                20,
-                "",
-                {
-                    fontSize: "28px",
-                    color: "#ffffff"
-                }
-            );
-
-        this.dropButton =
-            this.add.text(
-                20,
-                80,
-                "DROP BALL (1)",
-                {
-                    fontSize: "24px",
-                    color: "#ffffff",
-                    backgroundColor: "#333333",
-                    padding: {
-                        left: 10,
-                        right: 10,
-                        top: 8,
-                        bottom: 8
-                    }
-                }
-            );
-
-        this.dropButton
-            .setInteractive({
-                useHandCursor: true
-            })
-            .on(
-                "pointerdown",
-                () => {
-
-                    this.trySpawnBall();
-                }
-            );
-
-        this.add.text(
-            1020,
-            40,
-            "SHOP",
-            {
-                fontSize: "32px",
-                color: "#ffffff"
-            }
-        );
-
-        this.autoDropperText =
-            this.add.text(
-                980,
-                100,
-                "",
-                {
-                    fontSize: "20px",
-                    color: "#ffffff"
-                }
-            );
-
-        this.autoDropperButton =
-            this.add.text(
-                980,
-                210,
-                "BUY",
-                {
-                    fontSize: "24px",
-                    color: "#ffffff",
-                    backgroundColor: "#333333",
-                    padding: {
-                        left: 15,
-                        right: 15,
-                        top: 10,
-                        bottom: 10
-                    }
-                }
-            );
-
-        this.autoDropperButton
-            .setInteractive({
-                useHandCursor: true
-            })
-            .on(
-                "pointerdown",
-                () => {
-
-                    this.buyAutoDropper();
-                }
-            );
-
-        this.multiplierText =
-            this.add.text(
-                980,
-                320,
-                "",
-                {
-                    fontSize: "20px",
-                    color: "#ffffff"
-                }
-            );
-
-        this.multiplierButton =
-            this.add.text(
-                980,
-                430,
-                "BUY",
-                {
-                    fontSize: "24px",
-                    color: "#ffffff",
-                    backgroundColor: "#333333",
-                    padding: {
-                        left: 15,
-                        right: 15,
-                        top: 10,
-                        bottom: 10
-                    }
-                }
-            );
-
-        this.multiplierButton
-            .setInteractive({
-                useHandCursor: true
-            })
-            .on(
-                "pointerdown",
-                () => {
-
-                    this.buyMultiplier();
-                }
-            );
     }
 
     private buyAutoDropper(): void {
@@ -327,54 +189,54 @@ export class GameScene extends Phaser.Scene {
 
     private trySpawnBall(): void {
 
-    if (
-        this.time.now <
-        this.nextSpawnTime
-    ) {
-        return;
+        if (
+            this.time.now <
+            this.nextSpawnTime
+        ) {
+            return;
+        }
+
+        if (
+            !this.ballManager.canSpawnBall()
+        ) {
+            return;
+        }
+
+        if (
+            !this.economy.spendMoney(
+                this.BALL_COST
+            )
+        ) {
+            return;
+        }
+
+        this.spawnBall();
+
+        this.nextSpawnTime =
+            this.time.now + 250;
     }
-
-    if (
-        !this.ballManager.canSpawnBall()
-    ) {
-        return;
-    }
-
-    if (
-        !this.economy.spendMoney(
-            this.BALL_COST
-        )
-    ) {
-        return;
-    }
-
-    this.spawnBall();
-
-    this.nextSpawnTime =
-        this.time.now + 250;
-}
 
     private spawnBall(): boolean {
 
-    const centerX =
-        GAME_AREA.x +
-        GAME_AREA.width / 2;
+        const centerX =
+            GAME_AREA.x +
+            GAME_AREA.width / 2;
 
-    const spawnX =
-        centerX +
-        Phaser.Math.Between(
-            -20,
-            20
-        );
+        const spawnX =
+            centerX +
+            Phaser.Math.Between(
+                -20,
+                20
+            );
 
-    const ball =
-        this.ballManager.spawnBall(
-            spawnX,
-            GAME_AREA.y + 50
-        );
+        const ball =
+            this.ballManager.spawnBall(
+                spawnX,
+                GAME_AREA.y + 50
+            );
 
-    return ball !== null;
-}
+        return ball !== null;
+    }
 
     private drawGameArea(): void {
 

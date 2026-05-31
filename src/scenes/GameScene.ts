@@ -284,11 +284,11 @@ export class GameScene extends Phaser.Scene {
 
             GAME_AREA.height,
 
-            0x151515
+            0x111111
         )
         .setStrokeStyle(
             2,
-            0x444444
+            0x555555
         );
     }
 
@@ -498,7 +498,7 @@ export class GameScene extends Phaser.Scene {
                 FloatingText.create(
                     this,
                     ballX,
-                    slotLine - 20,
+                    slotLine - 25,
                     `+${reward}`
                 );
 
@@ -557,6 +557,10 @@ export class GameScene extends Phaser.Scene {
 
         this.ballCapacity.setLevel(
             save.ballCapacityLevel
+        );
+
+        this.ballManager?.setMaxBalls(
+            this.ballCapacity.getCapacity()
         );
     }
 

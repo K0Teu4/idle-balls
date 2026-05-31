@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 
 import { ShopItem } from "./ShopItem";
+import { UIColors } from "./UIColors";
 
 export class ShopPanel {
 
@@ -33,7 +34,7 @@ export class ShopPanel {
             "SHOP",
             {
                 fontSize: "32px",
-                color: "#ffffff"
+                color: UIColors.text
             }
         );
 
@@ -42,7 +43,8 @@ export class ShopPanel {
                 scene,
                 950,
                 80,
-                "Auto Dropper",
+                "⚙ Auto Dropper",
+                UIColors.autoDropper,
                 onBuyAutoDropper
             );
 
@@ -50,8 +52,9 @@ export class ShopPanel {
             new ShopItem(
                 scene,
                 950,
-                260,
-                "Multiplier",
+                270,
+                "✦ Multiplier",
+                UIColors.multiplier,
                 onBuyMultiplier
             );
 
@@ -59,8 +62,9 @@ export class ShopPanel {
             new ShopItem(
                 scene,
                 950,
-                440,
-                "Ball Capacity",
+                460,
+                "⬒ Ball Capacity",
+                UIColors.capacity,
                 onBuyCapacity
             );
     }
@@ -88,7 +92,7 @@ export class ShopPanel {
 
         this.multiplierItem.setInfo([
             `Level: ${multiplierLevel}`,
-            `Value: x${multiplierValue}`,
+            `Value: x${multiplierValue.toFixed(2)}`,
             `Cost: ${multiplierCost}`
         ]);
 

@@ -1,5 +1,8 @@
 import Phaser from "phaser";
 
+import { UIButton } from "./UIButton";
+import { UIColors } from "./UIColors";
+
 export class HudPanel {
 
     private moneyText:
@@ -9,7 +12,7 @@ export class HudPanel {
         Phaser.GameObjects.Text;
 
     constructor(
-        private scene: Phaser.Scene,
+        scene: Phaser.Scene,
 
         onDropBall: () => void
     ) {
@@ -19,59 +22,42 @@ export class HudPanel {
             20,
             "IDLE BALLS",
             {
-                fontSize: "30px",
-                color: "#ffffff"
+                fontSize: "32px",
+                color: UIColors.text
             }
         );
 
         this.moneyText =
             scene.add.text(
                 20,
-                80,
+                90,
                 "",
                 {
-                    fontSize: "24px",
-                    color: "#ffffff"
+                    fontSize: "26px",
+                    color: UIColors.money
                 }
             );
 
         this.ballsText =
             scene.add.text(
                 20,
-                120,
+                130,
                 "",
                 {
                     fontSize: "20px",
-                    color: "#cccccc"
+                    color: UIColors.secondaryText
                 }
             );
 
-        const dropButton =
-            scene.add.text(
-                20,
-                200,
-                "DROP BALL (1)",
-                {
-                    fontSize: "24px",
-                    color: "#ffffff",
-                    backgroundColor: "#333333",
-                    padding: {
-                        left: 10,
-                        right: 10,
-                        top: 8,
-                        bottom: 8
-                    }
-                }
-            );
-
-        dropButton
-            .setInteractive({
-                useHandCursor: true
-            })
-            .on(
-                "pointerdown",
-                onDropBall
-            );
+        new UIButton(
+            scene,
+            20,
+            220,
+            180,
+            48,
+            "DROP BALL",
+            onDropBall
+        );
     }
 
     update(

@@ -1,17 +1,11 @@
 import Phaser from "phaser";
 
+import { UIButton } from "./UIButton";
+import { UIColors } from "./UIColors";
+
 export class ShopItem {
 
-    private background:
-        Phaser.GameObjects.Rectangle;
-
-    private titleText:
-        Phaser.GameObjects.Text;
-
     private infoText:
-        Phaser.GameObjects.Text;
-
-    private buyButton:
         Phaser.GameObjects.Text;
 
     constructor(
@@ -22,71 +16,54 @@ export class ShopItem {
 
         title: string,
 
+        titleColor: string,
+
         onBuy: () => void
     ) {
 
-        this.background =
-            scene.add.rectangle(
-                x,
-                y,
-                240,
-                150,
-                0x202020
-            )
-            .setOrigin(0)
-            .setStrokeStyle(
-                2,
-                0x444444
-            );
+        scene.add.rectangle(
+            x,
+            y,
+            260,
+            160,
+            UIColors.panel
+        )
+        .setOrigin(0)
+        .setStrokeStyle(
+            2,
+            UIColors.panelBorder
+        );
 
-        this.titleText =
-            scene.add.text(
-                x + 10,
-                y + 10,
-                title,
-                {
-                    fontSize: "22px",
-                    color: "#ffffff"
-                }
-            );
+        scene.add.text(
+            x + 12,
+            y + 10,
+            title,
+            {
+                fontSize: "24px",
+                color: titleColor
+            }
+        );
 
         this.infoText =
             scene.add.text(
-                x + 10,
-                y + 45,
+                x + 12,
+                y + 50,
                 "",
                 {
                     fontSize: "18px",
-                    color: "#cccccc"
+                    color: UIColors.secondaryText
                 }
             );
 
-        this.buyButton =
-            scene.add.text(
-                x + 10,
-                y + 110,
-                "BUY",
-                {
-                    fontSize: "22px",
-                    color: "#ffffff",
-                    backgroundColor: "#333333",
-                    padding: {
-                        left: 12,
-                        right: 12,
-                        top: 8,
-                        bottom: 8
-                    }
-                }
-            );
-
-        this.buyButton
-            .setInteractive({
-                useHandCursor: true
-            })
-            .on(
-                "pointerdown",
-                onBuy
-            );
+        new UIButton(
+            scene,
+            x + 12,
+            y + 115,
+            100,
+            34,
+            "BUY",
+            onBuy
+        );
     }
 
     setInfo(

@@ -10,6 +10,9 @@ export class ShopPanel {
     private multiplierItem:
         ShopItem;
 
+    private capacityItem:
+        ShopItem;
+
     constructor(
 
         scene: Phaser.Scene,
@@ -18,6 +21,9 @@ export class ShopPanel {
             () => void,
 
         onBuyMultiplier:
+            () => void,
+
+        onBuyCapacity:
             () => void
     ) {
 
@@ -48,6 +54,15 @@ export class ShopPanel {
                 "Multiplier",
                 onBuyMultiplier
             );
+
+        this.capacityItem =
+            new ShopItem(
+                scene,
+                950,
+                440,
+                "Ball Capacity",
+                onBuyCapacity
+            );
     }
 
     update(
@@ -58,7 +73,11 @@ export class ShopPanel {
 
         multiplierLevel: number,
         multiplierValue: number,
-        multiplierCost: number
+        multiplierCost: number,
+
+        capacityLevel: number,
+        capacityValue: number,
+        capacityCost: number
     ): void {
 
         this.autoDropperItem.setInfo([
@@ -71,6 +90,12 @@ export class ShopPanel {
             `Level: ${multiplierLevel}`,
             `Value: x${multiplierValue}`,
             `Cost: ${multiplierCost}`
+        ]);
+
+        this.capacityItem.setInfo([
+            `Level: ${capacityLevel}`,
+            `Capacity: ${capacityValue}`,
+            `Cost: ${capacityCost}`
         ]);
     }
 }

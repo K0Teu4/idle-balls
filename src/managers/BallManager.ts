@@ -3,24 +3,29 @@ import { Ball } from "../game/Ball";
 
 export class BallManager {
 
-    private readonly MAX_BALLS = 100;
-
     private scene: Phaser.Scene;
 
     private balls: Ball[] = [];
 
+    private maxBalls = 100;
+
     constructor(
         scene: Phaser.Scene
     ) {
+
         this.scene = scene;
     }
 
-    canSpawnBall(): boolean {
+    setMaxBalls(
+        value: number
+    ): void {
 
-        return (
-            this.balls.length <
-            this.MAX_BALLS
-        );
+        this.maxBalls = value;
+    }
+
+    getMaxBalls(): number {
+
+        return this.maxBalls;
     }
 
     getBallCount(): number {
@@ -28,9 +33,12 @@ export class BallManager {
         return this.balls.length;
     }
 
-    getMaxBalls(): number {
+    canSpawnBall(): boolean {
 
-        return this.MAX_BALLS;
+        return (
+            this.balls.length <
+            this.maxBalls
+        );
     }
 
     spawnBall(
@@ -64,6 +72,7 @@ export class BallManager {
             const ball of
             this.balls
         ) {
+
             ball.update();
         }
 

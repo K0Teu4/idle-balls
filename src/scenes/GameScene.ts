@@ -14,6 +14,7 @@ import { EconomyManager } from "../managers/EconomyManager";
 import { BallManager } from "../managers/BallManager";
 import { AutoDropperManager } from "../managers/AutoDropperManager";
 import { MultiplierManager } from "../managers/MultiplierManager";
+import { BallCapacityManager } from "../managers/BallCapacityManager";
 import { SaveManager } from "../managers/SaveManager";
 
 import { HudPanel } from "../ui/HudPanel";
@@ -34,6 +35,9 @@ export class GameScene extends Phaser.Scene {
 
     private multiplier =
         new MultiplierManager();
+
+    private ballCapacity =
+        new BallCapacityManager();
 
     private hudPanel!:
         HudPanel;
@@ -62,6 +66,10 @@ export class GameScene extends Phaser.Scene {
         this.ballManager =
             new BallManager(this);
 
+        this.ballManager.setMaxBalls(
+            this.ballCapacity.getCapacity()
+        );
+
         this.hudPanel =
             new HudPanel(
                 this,
@@ -72,7 +80,8 @@ export class GameScene extends Phaser.Scene {
             new ShopPanel(
                 this,
                 () => this.buyAutoDropper(),
-                () => this.buyMultiplier()
+                () => this.buyMultiplier(),
+                () => this.buyBallCapacity()
             );
 
         this.refreshSlotLabels();
@@ -110,7 +119,11 @@ export class GameScene extends Phaser.Scene {
 
             this.multiplier.getLevel(),
             this.multiplier.getMultiplier(),
-            this.multiplier.getCost()
+            this.multiplier.getCost(),
+
+            this.ballCapacity.getLevel(),
+            this.ballCapacity.getCapacity(),
+            this.ballCapacity.getCost()
         );
     }
 
@@ -185,6 +198,26 @@ export class GameScene extends Phaser.Scene {
         this.multiplier.buy();
 
         this.refreshSlotLabels();
+    }
+
+    private buyBallCapacity(): void {
+
+        const cost =
+            this.ballCapacity.getCost();
+
+        if (
+            !this.economy.spendMoney(
+                cost
+            )
+        ) {
+            return;
+        }
+
+        this.ballCapacity.buy();
+
+        this.ballManager.setMaxBalls(
+            this.ballCapacity.getCapacity()
+        );
     }
 
     private trySpawnBall(): void {
@@ -493,6 +526,9 @@ export class GameScene extends Phaser.Scene {
             multiplierLevel:
                 this.multiplier.getLevel(),
 
+            ballCapacityLevel:
+                this.ballCapacity.getLevel(),
+
             lastSaveTime:
                 Date.now()
         });
@@ -517,6 +553,10 @@ export class GameScene extends Phaser.Scene {
 
         this.multiplier.setLevel(
             save.multiplierLevel
+        );
+
+        this.ballCapacity.setLevel(
+            save.ballCapacityLevel
         );
     }
 

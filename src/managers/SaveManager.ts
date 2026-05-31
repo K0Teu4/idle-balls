@@ -8,6 +8,8 @@ export interface SaveData {
 
     multiplierLevel: number;
 
+    ballCapacityLevel: number;
+
     lastSaveTime: number;
 }
 
@@ -84,6 +86,9 @@ export class SaveManager {
                 "number" &&
 
             typeof save.multiplierLevel ===
+                "number" &&
+
+            typeof save.ballCapacityLevel ===
                 "number" &&
 
             typeof save.lastSaveTime ===

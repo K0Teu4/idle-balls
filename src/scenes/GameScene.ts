@@ -60,6 +60,8 @@ export class GameScene extends Phaser.Scene {
 
         this.drawGameArea();
 
+        this.createBackgroundDecor();
+
         this.createBounds();
 
         this.createPegs();
@@ -333,6 +335,39 @@ export class GameScene extends Phaser.Scene {
         );
     }
 
+    private createBackgroundDecor(): void {
+
+        for (
+            let i = 0;
+            i < 40;
+            i++
+        ) {
+
+            this.add.circle(
+
+                Phaser.Math.Between(
+                    GAME_AREA.x,
+                    GAME_AREA.x +
+                    GAME_AREA.width
+                ),
+
+                Phaser.Math.Between(
+                    GAME_AREA.y,
+                    GAME_AREA.y +
+                    GAME_AREA.height
+                ),
+
+                Phaser.Math.Between(
+                    1,
+                    2
+                ),
+
+                0xffffff,
+                0.08
+            );
+        }
+    }
+
     private createBounds(): void {
 
         const left =
@@ -541,6 +576,14 @@ export class GameScene extends Phaser.Scene {
                             reward *
                             this.goldenBall.getRewardMultiplier()
                         );
+
+                    FloatingText.create(
+                        this,
+                        ballX,
+                        slotLine - 50,
+                        "GOLD!",
+                        0xffdd33
+                    );
                 }
 
                 this.economy.addMoney(

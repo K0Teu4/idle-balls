@@ -9,40 +9,45 @@ export class FloatingText {
         x: number,
         y: number,
 
-        text: string
+        text: string,
+
+        color = "#ffd700",
+
+        size = 34
     ): void {
 
-        const label =
+        const floatingText =
             scene.add.text(
                 x,
                 y,
                 text,
                 {
-                    fontSize: "28px",
-                    color: "#f1c40f",
-                    stroke: "#000000",
-                    strokeThickness: 4
+                    fontSize:
+                        `${size}px`,
+
+                    color
                 }
-            )
-            .setOrigin(0.5);
+            );
+
+        floatingText.setOrigin(
+            0.5
+        );
 
         scene.tweens.add({
 
-            targets: label,
+            targets:
+                floatingText,
 
-            y: y - 40,
+            y:
+                y - 50,
 
             alpha: 0,
 
-            scale: 1.3,
-
-            duration: 700,
-
-            ease: "Quad.Out",
+            duration: 900,
 
             onComplete: () => {
 
-                label.destroy();
+                floatingText.destroy();
             }
         });
     }

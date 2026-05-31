@@ -2,15 +2,6 @@ export class BallCapacityManager {
 
     private level = 0;
 
-    private readonly BASE_CAPACITY = 100;
-
-    private readonly CAPACITY_PER_LEVEL = 10;
-
-    getLevel(): number {
-
-        return this.level;
-    }
-
     setLevel(
         level: number
     ): void {
@@ -18,9 +9,17 @@ export class BallCapacityManager {
         this.level = level;
     }
 
-    buy(): void {
+    getLevel(): number {
 
-        this.level++;
+        return this.level;
+    }
+
+    getCapacity(): number {
+
+        return (
+            10 +
+            this.level * 10
+        );
     }
 
     getCost(): number {
@@ -34,12 +33,8 @@ export class BallCapacityManager {
         );
     }
 
-    getCapacity(): number {
+    buy(): void {
 
-        return (
-            this.BASE_CAPACITY +
-            this.level *
-            this.CAPACITY_PER_LEVEL
-        );
+        this.level++;
     }
 }

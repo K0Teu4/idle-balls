@@ -437,6 +437,17 @@ export class GameScene extends Phaser.Scene {
                     isStatic: true
                 }
             );
+
+            this.add.rectangle(
+                dividerX,
+                GAME_AREA.y +
+                GAME_AREA.height -
+                SLOT_HEIGHT / 2,
+                4,
+                SLOT_HEIGHT,
+                0x666666,
+                0.6
+            );
         }
     }
 

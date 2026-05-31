@@ -18,7 +18,7 @@ export class MultiplierManager {
 
         return Number(
             Math.pow(
-                1.1,
+                1.2,
                 this.level
             ).toFixed(2)
         );

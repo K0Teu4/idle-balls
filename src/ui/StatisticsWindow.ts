@@ -41,11 +41,18 @@ export class StatisticsWindow {
         const closeButton =
             scene.add.text(
                 640,
-                610,
+                500,
                 "CLOSE",
                 {
-                    fontSize: "24px",
-                    color: "#ff6666"
+                    fontSize: "28px",
+                    color: "#ffffff",
+                    backgroundColor: "#aa3333",
+                    padding: {
+                        left: 12,
+                        right: 12,
+                        top: 6,
+                        bottom: 6
+                    }
                 }
             )
             .setOrigin(0.5)

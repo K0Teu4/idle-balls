@@ -142,6 +142,12 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
+        if (
+            !this.ballManager.canSpawnBall()
+        ) {
+            return;
+        }
+
         this.spawnBall();
 
         this.nextAutoDrop =
@@ -321,45 +327,54 @@ export class GameScene extends Phaser.Scene {
 
     private trySpawnBall(): void {
 
-        if (
-            this.time.now <
-            this.nextSpawnTime
-        ) {
-            return;
-        }
-
-        if (
-            !this.economy.spendMoney(
-                this.BALL_COST
-            )
-        ) {
-            return;
-        }
-
-        this.spawnBall();
-
-        this.nextSpawnTime =
-            this.time.now + 250;
+    if (
+        this.time.now <
+        this.nextSpawnTime
+    ) {
+        return;
     }
 
-    private spawnBall(): void {
+    if (
+        !this.ballManager.canSpawnBall()
+    ) {
+        return;
+    }
 
-        const centerX =
-            GAME_AREA.x +
-            GAME_AREA.width / 2;
+    if (
+        !this.economy.spendMoney(
+            this.BALL_COST
+        )
+    ) {
+        return;
+    }
 
-        const spawnX =
-            centerX +
-            Phaser.Math.Between(
-                -20,
-                20
-            );
+    this.spawnBall();
 
+    this.nextSpawnTime =
+        this.time.now + 250;
+}
+
+    private spawnBall(): boolean {
+
+    const centerX =
+        GAME_AREA.x +
+        GAME_AREA.width / 2;
+
+    const spawnX =
+        centerX +
+        Phaser.Math.Between(
+            -20,
+            20
+        );
+
+    const ball =
         this.ballManager.spawnBall(
             spawnX,
             GAME_AREA.y + 50
         );
-    }
+
+    return ball !== null;
+}
 
     private drawGameArea(): void {
 

@@ -39,11 +39,55 @@ export class SaveManager {
 
         try {
 
-            return JSON.parse(raw);
+            const parsed =
+                JSON.parse(raw);
+
+            if (
+                !this.isValidSave(
+                    parsed
+                )
+            ) {
+                return null;
+            }
+
+            return parsed;
 
         } catch {
 
             return null;
         }
+    }
+
+    private static isValidSave(
+        data: unknown
+    ): data is SaveData {
+
+        if (
+            typeof data !==
+            "object"
+            || data === null
+        ) {
+            return false;
+        }
+
+        const save =
+            data as SaveData;
+
+        return (
+            typeof save.version ===
+                "number" &&
+
+            typeof save.money ===
+                "number" &&
+
+            typeof save.autoDropperLevel ===
+                "number" &&
+
+            typeof save.multiplierLevel ===
+                "number" &&
+
+            typeof save.lastSaveTime ===
+                "number"
+        );
     }
 }

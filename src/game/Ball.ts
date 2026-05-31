@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 
+import { BallType } from "./BallType";
+
 export class Ball {
 
     body: MatterJS.BodyType;
@@ -8,22 +10,31 @@ export class Ball {
 
     destroyed = false;
 
+    readonly type:
+        BallType;
+
     constructor(
         scene: Phaser.Scene,
+
         x: number,
-        y: number
+        y: number,
+
+        type: BallType
     ) {
 
-        this.body = scene.matter.add.circle(
-            x,
-            y,
-            10,
-            {
-                restitution: 0.95,
-                friction: 0,
-                frictionAir: 0.001
-            }
-        );
+        this.type = type;
+
+        this.body =
+            scene.matter.add.circle(
+                x,
+                y,
+                10,
+                {
+                    restitution: 0.95,
+                    friction: 0,
+                    frictionAir: 0.001
+                }
+            );
 
         const randomForce =
             Phaser.Math.FloatBetween(
@@ -40,17 +51,39 @@ export class Ball {
             }
         );
 
-        this.graphics = scene.add.circle(
-            x,
-            y,
-            10,
-            0xffcc00
-        );
+        const isGolden =
+            type ===
+            BallType.Golden;
+
+        this.graphics =
+            scene.add.circle(
+                x,
+                y,
+                isGolden
+                    ? 12
+                    : 10,
+
+                isGolden
+                    ? 0xffd700
+                    : 0xffcc00
+            );
+
+        if (
+            isGolden
+        ) {
+
+            this.graphics.setStrokeStyle(
+                2,
+                0xffffff
+            );
+        }
     }
 
     update(): void {
 
-        if (this.destroyed) {
+        if (
+            this.destroyed
+        ) {
             return;
         }
 
@@ -61,9 +94,13 @@ export class Ball {
             this.body.position.y;
     }
 
-    destroy(scene: Phaser.Scene): void {
+    destroy(
+        scene: Phaser.Scene
+    ): void {
 
-        if (this.destroyed) {
+        if (
+            this.destroyed
+        ) {
             return;
         }
 
@@ -84,5 +121,13 @@ export class Ball {
     getY(): number {
 
         return this.body.position.y;
+    }
+
+    isGolden(): boolean {
+
+        return (
+            this.type ===
+            BallType.Golden
+        );
     }
 }

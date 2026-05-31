@@ -25,7 +25,7 @@ export class ShopItem {
             x,
             y,
             260,
-            160,
+            130,
             UIColors.panel
         )
         .setOrigin(0)
@@ -39,7 +39,7 @@ export class ShopItem {
             y + 10,
             title,
             {
-                fontSize: "24px",
+                fontSize: "22px",
                 color: titleColor
             }
         );
@@ -47,10 +47,10 @@ export class ShopItem {
         this.infoText =
             scene.add.text(
                 x + 12,
-                y + 50,
+                y + 42,
                 "",
                 {
-                    fontSize: "18px",
+                    fontSize: "16px",
                     color: UIColors.secondaryText
                 }
             );
@@ -58,9 +58,9 @@ export class ShopItem {
         new UIButton(
             scene,
             x + 12,
-            y + 115,
+            y + 92,
             100,
-            34,
+            28,
             "BUY",
             onBuy
         );

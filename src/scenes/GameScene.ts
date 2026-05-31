@@ -3,6 +3,7 @@ import Phaser from "phaser";
 import { Peg } from "../game/Peg";
 import { Slot } from "../game/Slot";
 import { FloatingText } from "../game/FloatingText";
+import { BallType } from "../game/BallType";
 
 import {
     GAME_AREA,
@@ -15,6 +16,7 @@ import { BallManager } from "../managers/BallManager";
 import { AutoDropperManager } from "../managers/AutoDropperManager";
 import { MultiplierManager } from "../managers/MultiplierManager";
 import { BallCapacityManager } from "../managers/BallCapacityManager";
+import { GoldenBallManager } from "../managers/GoldenBallManager";
 import { SaveManager } from "../managers/SaveManager";
 
 import { HudPanel } from "../ui/HudPanel";
@@ -38,6 +40,9 @@ export class GameScene extends Phaser.Scene {
 
     private ballCapacity =
         new BallCapacityManager();
+
+    private goldenBall =
+        new GoldenBallManager();
 
     private hudPanel!:
         HudPanel;
@@ -81,7 +86,8 @@ export class GameScene extends Phaser.Scene {
                 this,
                 () => this.buyAutoDropper(),
                 () => this.buyMultiplier(),
-                () => this.buyBallCapacity()
+                () => this.buyBallCapacity(),
+                () => this.buyGoldenBall()
             );
 
         this.refreshSlotLabels();
@@ -123,7 +129,11 @@ export class GameScene extends Phaser.Scene {
 
             this.ballCapacity.getLevel(),
             this.ballCapacity.getCapacity(),
-            this.ballCapacity.getCost()
+            this.ballCapacity.getCost(),
+
+            this.goldenBall.getLevel(),
+            this.goldenBall.getChance(),
+            this.goldenBall.getCost()
         );
     }
 
@@ -220,6 +230,22 @@ export class GameScene extends Phaser.Scene {
         );
     }
 
+    private buyGoldenBall(): void {
+
+        const cost =
+            this.goldenBall.getCost();
+
+        if (
+            !this.economy.spendMoney(
+                cost
+            )
+        ) {
+            return;
+        }
+
+        this.goldenBall.buy();
+    }
+
     private trySpawnBall(): void {
 
         if (
@@ -262,10 +288,25 @@ export class GameScene extends Phaser.Scene {
                 20
             );
 
+        const roll =
+            Phaser.Math.Between(
+                1,
+                100
+            );
+
+        const type =
+            roll <=
+            this.goldenBall.getChance()
+
+                ? BallType.Golden
+
+                : BallType.Normal;
+
         const ball =
             this.ballManager.spawnBall(
                 spawnX,
-                GAME_AREA.y + 50
+                GAME_AREA.y + 50,
+                type
             );
 
         return ball !== null;
@@ -485,11 +526,22 @@ export class GameScene extends Phaser.Scene {
                     continue;
                 }
 
-                const reward =
+                let reward =
                     Math.round(
                         slot.value *
                         this.multiplier.getMultiplier()
                     );
+
+                if (
+                    ball.isGolden()
+                ) {
+
+                    reward =
+                        Math.round(
+                            reward *
+                            this.goldenBall.getRewardMultiplier()
+                        );
+                }
 
                 this.economy.addMoney(
                     reward
@@ -515,7 +567,7 @@ export class GameScene extends Phaser.Scene {
 
         SaveManager.save({
 
-            version: 1,
+            version: 2,
 
             money:
                 this.economy.getMoney(),
@@ -528,6 +580,9 @@ export class GameScene extends Phaser.Scene {
 
             ballCapacityLevel:
                 this.ballCapacity.getLevel(),
+
+            goldenBallLevel:
+                this.goldenBall.getLevel(),
 
             lastSaveTime:
                 Date.now()
@@ -559,8 +614,8 @@ export class GameScene extends Phaser.Scene {
             save.ballCapacityLevel
         );
 
-        this.ballManager?.setMaxBalls(
-            this.ballCapacity.getCapacity()
+        this.goldenBall.setLevel(
+            save.goldenBallLevel
         );
     }
 

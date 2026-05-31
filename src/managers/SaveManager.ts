@@ -10,6 +10,8 @@ export interface SaveData {
 
     ballCapacityLevel: number;
 
+    goldenBallLevel: number;
+
     lastSaveTime: number;
 }
 
@@ -76,6 +78,7 @@ export class SaveManager {
             data as SaveData;
 
         return (
+
             typeof save.version ===
                 "number" &&
 
@@ -89,6 +92,9 @@ export class SaveManager {
                 "number" &&
 
             typeof save.ballCapacityLevel ===
+                "number" &&
+
+            typeof save.goldenBallLevel ===
                 "number" &&
 
             typeof save.lastSaveTime ===

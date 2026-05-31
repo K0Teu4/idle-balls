@@ -1,11 +1,15 @@
 import Phaser from "phaser";
+
 import { Ball } from "../game/Ball";
+import { BallType } from "../game/BallType";
 
 export class BallManager {
 
-    private scene: Phaser.Scene;
+    private scene:
+        Phaser.Scene;
 
-    private balls: Ball[] = [];
+    private balls:
+        Ball[] = [];
 
     private maxBalls = 100;
 
@@ -13,14 +17,16 @@ export class BallManager {
         scene: Phaser.Scene
     ) {
 
-        this.scene = scene;
+        this.scene =
+            scene;
     }
 
     setMaxBalls(
         value: number
     ): void {
 
-        this.maxBalls = value;
+        this.maxBalls =
+            value;
     }
 
     getMaxBalls(): number {
@@ -43,7 +49,11 @@ export class BallManager {
 
     spawnBall(
         x: number,
-        y: number
+        y: number,
+
+        type:
+            BallType =
+                BallType.Normal
     ): Ball | null {
 
         if (
@@ -56,7 +66,8 @@ export class BallManager {
             new Ball(
                 this.scene,
                 x,
-                y
+                y,
+                type
             );
 
         this.balls.push(

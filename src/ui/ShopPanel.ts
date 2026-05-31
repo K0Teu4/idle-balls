@@ -14,6 +14,9 @@ export class ShopPanel {
     private capacityItem:
         ShopItem;
 
+    private goldenBallItem:
+        ShopItem;
+
     constructor(
 
         scene: Phaser.Scene,
@@ -25,6 +28,9 @@ export class ShopPanel {
             () => void,
 
         onBuyCapacity:
+            () => void,
+
+        onBuyGoldenBall:
             () => void
     ) {
 
@@ -52,7 +58,7 @@ export class ShopPanel {
             new ShopItem(
                 scene,
                 950,
-                270,
+                230,
                 "✦ Multiplier",
                 UIColors.multiplier,
                 onBuyMultiplier
@@ -62,10 +68,20 @@ export class ShopPanel {
             new ShopItem(
                 scene,
                 950,
-                460,
+                380,
                 "⬒ Ball Capacity",
                 UIColors.capacity,
                 onBuyCapacity
+            );
+
+        this.goldenBallItem =
+            new ShopItem(
+                scene,
+                950,
+                530,
+                "★ Golden Balls",
+                "#ffd700",
+                onBuyGoldenBall
             );
     }
 
@@ -81,7 +97,11 @@ export class ShopPanel {
 
         capacityLevel: number,
         capacityValue: number,
-        capacityCost: number
+        capacityCost: number,
+
+        goldenBallLevel: number,
+        goldenBallChance: number,
+        goldenBallCost: number
     ): void {
 
         this.autoDropperItem.setInfo([
@@ -100,6 +120,12 @@ export class ShopPanel {
             `Level: ${capacityLevel}`,
             `Capacity: ${capacityValue}`,
             `Cost: ${capacityCost}`
+        ]);
+
+        this.goldenBallItem.setInfo([
+            `Level: ${goldenBallLevel}`,
+            `Chance: ${goldenBallChance}%`,
+            `Cost: ${goldenBallCost}`
         ]);
     }
 }

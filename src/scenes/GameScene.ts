@@ -68,7 +68,8 @@ export class GameScene extends Phaser.Scene {
 
         this.createSlots();
 
-        this.loadSave();
+        const offlineData =
+            this.loadSave();
 
         this.ballManager =
             new BallManager(this);
@@ -93,6 +94,15 @@ export class GameScene extends Phaser.Scene {
             );
 
         this.refreshSlotLabels();
+
+        if (
+            offlineData !== null
+        ) {
+
+            this.applyOfflineProgress(
+                offlineData
+            );
+        }
 
         this.startAutosave();
     }
@@ -606,6 +616,144 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    private applyOfflineProgress(
+        lastSaveTime: number
+    ): void {
+
+        const maxSeconds =
+            8 * 60 * 60;
+
+        const secondsAway =
+            Math.min(
+                maxSeconds,
+                Math.floor(
+                    (
+                        Date.now() -
+                        lastSaveTime
+                    ) / 1000
+                )
+            );
+
+        if (
+            secondsAway < 30
+        ) {
+            return;
+        }
+
+        const ballsProduced =
+            secondsAway *
+            this.autoDropper.getBallsPerSecond();
+
+        const averageSlotReward =
+            3.71;
+
+        const multiplierBonus =
+            this.multiplier.getMultiplier();
+
+        const goldenBonus =
+            1 +
+            (
+                this.goldenBall.getChance() /
+                100
+            ) *
+            (
+                this.goldenBall.getRewardMultiplier() - 1
+            );
+
+        const income =
+            Math.floor(
+                ballsProduced *
+                averageSlotReward *
+                multiplierBonus *
+                goldenBonus
+            );
+
+        if (
+            income <= 0
+        ) {
+            return;
+        }
+
+        this.economy.addMoney(
+            income
+        );
+
+        this.showOfflinePopup(
+            income,
+            secondsAway
+        );
+    }
+
+    private showOfflinePopup(
+        income: number,
+        secondsAway: number
+    ): void {
+
+        const text =
+            this.add.text(
+                640,
+                300,
+                [
+                    "WELCOME BACK",
+                    "",
+                    `Away: ${this.formatOfflineTime(secondsAway)}`,
+                    "",
+                    `Offline Earnings`,
+                    `+${income}`
+                ].join("\n"),
+                {
+                    fontSize: "28px",
+                    color: "#ffffff",
+                    align: "center",
+                    backgroundColor: "#222222",
+                    padding: {
+                        left: 20,
+                        right: 20,
+                        top: 20,
+                        bottom: 20
+                    }
+                }
+            )
+            .setOrigin(0.5)
+            .setDepth(999);
+
+        this.tweens.add({
+
+            targets: text,
+
+            alpha: 0,
+
+            delay: 4000,
+
+            duration: 1000,
+
+            onComplete: () => {
+
+                text.destroy();
+            }
+        });
+    }
+
+    private formatOfflineTime(
+        seconds: number
+    ): string {
+
+        const hours =
+            Math.floor(
+                seconds / 3600
+            );
+
+        const minutes =
+            Math.floor(
+                (seconds % 3600) / 60
+            );
+
+        const secs =
+            seconds % 60;
+
+        return `${hours}h ${minutes}m ${secs}s`;
+    }
+
     private saveGame(): void {
 
         SaveManager.save({
@@ -632,13 +780,13 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
-    private loadSave(): void {
+    private loadSave(): number | null {
 
         const save =
             SaveManager.load();
 
         if (!save) {
-            return;
+            return null;
         }
 
         this.economy.setMoney(
@@ -660,6 +808,8 @@ export class GameScene extends Phaser.Scene {
         this.goldenBall.setLevel(
             save.goldenBallLevel
         );
+
+        return save.lastSaveTime;
     }
 
     private startAutosave(): void {

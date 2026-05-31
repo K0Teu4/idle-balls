@@ -11,6 +11,9 @@ export class HudPanel {
     private ballsText:
         Phaser.GameObjects.Text;
 
+    private messageText:
+        Phaser.GameObjects.Text;
+
     constructor(
         scene: Phaser.Scene,
 
@@ -49,6 +52,17 @@ export class HudPanel {
                 }
             );
 
+        this.messageText =
+            scene.add.text(
+                20,
+                170,
+                "",
+                {
+                    fontSize: "18px",
+                    color: "#ff6666"
+                }
+            );
+
         new UIButton(
             scene,
             20,
@@ -77,5 +91,30 @@ export class HudPanel {
         this.ballsText.setText(
             `Balls: ${currentBalls}/${maxBalls}`
         );
+    }
+
+    showMessage(
+        message: string
+    ): void {
+
+        this.messageText.setText(
+            message
+        );
+
+        this.messageText.setAlpha(
+            1
+        );
+
+        this.messageText.scene.tweens.add({
+
+            targets:
+                this.messageText,
+
+            alpha: 0,
+
+            delay: 1500,
+
+            duration: 500
+        });
     }
 }

@@ -18,16 +18,16 @@ export class BallCapacityManager {
 
         return (
             10 +
-            this.level * 10
+            this.level * 2
         );
     }
 
     getCost(): number {
 
         return Math.floor(
-            100 *
+            75 *
             Math.pow(
-                1.75,
+                1.8,
                 this.level
             )
         );

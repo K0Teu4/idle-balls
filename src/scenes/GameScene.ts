@@ -56,6 +56,14 @@ export class GameScene extends Phaser.Scene {
 
     private readonly BALL_COST = 1;
 
+    private showNotEnoughMoney(): void {
+
+    this.hudPanel.showMessage(
+        "Not enough money!"
+    );
+    }
+
+
     create(): void {
 
         this.drawGameArea();
@@ -198,6 +206,9 @@ export class GameScene extends Phaser.Scene {
                 cost
             )
         ) {
+
+            this.showNotEnoughMoney();
+
             return;
         }
 
@@ -214,6 +225,9 @@ export class GameScene extends Phaser.Scene {
                 cost
             )
         ) {
+
+            this.showNotEnoughMoney();
+
             return;
         }
 
@@ -232,6 +246,9 @@ export class GameScene extends Phaser.Scene {
                 cost
             )
         ) {
+
+            this.showNotEnoughMoney();
+
             return;
         }
 
@@ -252,6 +269,9 @@ export class GameScene extends Phaser.Scene {
                 cost
             )
         ) {
+
+            this.showNotEnoughMoney();
+
             return;
         }
 
@@ -270,6 +290,11 @@ export class GameScene extends Phaser.Scene {
         if (
             !this.ballManager.canSpawnBall()
         ) {
+
+            this.hudPanel.showMessage(
+                "Ball limit reached!"
+            );
+
             return;
         }
 
@@ -278,6 +303,9 @@ export class GameScene extends Phaser.Scene {
                 this.BALL_COST
             )
         ) {
+
+            this.showNotEnoughMoney();
+
             return;
         }
 
@@ -445,10 +473,23 @@ export class GameScene extends Phaser.Scene {
                 SLOT_HEIGHT / 2,
                 4,
                 SLOT_HEIGHT,
-                0x666666,
-                0.6
-            );
-        }
+                0xffffff,
+                1
+            )
+            .setDepth(100);
+
+            this.add.rectangle(
+                dividerX,
+                GAME_AREA.y +
+                GAME_AREA.height -
+                SLOT_HEIGHT / 2,
+                10,
+                SLOT_HEIGHT,
+                0xffffff,
+                0.15
+            )
+            .setDepth(99);
+                    }
     }
 
     private createPegs(): void {

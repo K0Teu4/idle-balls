@@ -11,6 +11,12 @@ export class HudPanel {
     private ballsText:
         Phaser.GameObjects.Text;
 
+    private apText:
+        Phaser.GameObjects.Text;
+
+    private capacityBar:
+        Phaser.GameObjects.Rectangle;
+
     private messageText:
         Phaser.GameObjects.Text;
 
@@ -19,7 +25,9 @@ export class HudPanel {
 
         onDropBall: () => void,
 
-        onShowStatistics: () => void
+        onShowStatistics: () => void,
+
+        onShowAchievements: () => void
     ) {
 
         scene.add.text(
@@ -54,10 +62,46 @@ export class HudPanel {
                 }
             );
 
+        this.apText =
+            scene.add.text(
+                20,
+                190,
+                "",
+                {
+                    fontSize: "20px",
+                    color: "#d4af37"
+                }
+            );
+
+        scene.add.rectangle(
+            20,
+            165,
+            180,
+            12,
+            0x333333
+        )
+        .setOrigin(
+            0,
+            0
+        );
+
+        this.capacityBar =
+            scene.add.rectangle(
+                20,
+                165,
+                0,
+                12,
+                0x44aa44
+            )
+            .setOrigin(
+                0,
+                0
+            );
+
         this.messageText =
             scene.add.text(
                 20,
-                170,
+                220,
                 "",
                 {
                     fontSize: "18px",
@@ -68,7 +112,7 @@ export class HudPanel {
         new UIButton(
             scene,
             20,
-            220,
+            270,
             180,
             48,
             "DROP BALL",
@@ -78,19 +122,28 @@ export class HudPanel {
         new UIButton(
             scene,
             20,
-            280,
+            330,
             180,
             48,
             "STATISTICS",
             onShowStatistics
         );
+
+        new UIButton(
+            scene,
+            20,
+            390,
+            180,
+            48,
+            "ACHIEVEMENTS",
+            onShowAchievements
+        );
     }
 
     update(
         money: number,
-
         currentBalls: number,
-
+        ap: number,
         maxBalls: number
     ): void {
 
@@ -103,6 +156,24 @@ export class HudPanel {
         this.ballsText.setText(
             `Balls: ${currentBalls}/${maxBalls}`
         );
+
+        this.apText.setText(
+            `🏆 AP: ${ap}`
+        );
+
+        const ratio =
+            maxBalls <= 0
+                ? 0
+                : currentBalls /
+                  maxBalls;
+
+        this.capacityBar.width =
+            180 *
+            Phaser.Math.Clamp(
+                ratio,
+                0,
+                1
+            );
     }
 
     showMessage(

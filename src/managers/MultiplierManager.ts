@@ -1,42 +1,44 @@
 export class MultiplierManager {
+private level = 0;
 
-    private level = 0;
+setLevel(
+    level: number
+): void {
 
-    setLevel(
-        level: number
-    ): void {
+    this.level = level;
+}
 
-        this.level = level;
-    }
+getLevel(): number {
 
-    getLevel(): number {
+    return this.level;
+}
 
-        return this.level;
-    }
+getMultiplier(): number {
 
-    getMultiplier(): number {
+    const linear =
+        0.05 * this.level;
 
-        return Number(
-            Math.pow(
-                1.2,
-                this.level
-            ).toFixed(2)
-        );
-    }
+    const logPart =
+        0.5 * Math.log(1 + 0.2 * this.level);
 
-    getCost(): number {
+    return Number(
+        (1 + linear + logPart).toFixed(2)
+    );
+}
 
-        return Math.floor(
-            50 *
-            Math.pow(
-                2,
-                this.level
-            )
-        );
-    }
+getCost(): number {
 
-    buy(): void {
+    return Math.floor(
+        50 *
+        Math.pow(
+            2,
+            this.level
+        )
+    );
+}
 
-        this.level++;
-    }
+buy(): void {
+
+    this.level++;
+}
 }

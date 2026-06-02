@@ -12,6 +12,8 @@ import {
 } from "../config/GameConfig";
 
 import { StatisticsManager } from "../managers/StatisticsManager";
+import { AchievementWindow } from "../ui/AchievementWindow";
+import { AchievementManager } from "../managers/AchievementManager";
 import { EconomyManager } from "../managers/EconomyManager";
 import { BallManager } from "../managers/BallManager";
 import { AutoDropperManager } from "../managers/AutoDropperManager";
@@ -23,6 +25,7 @@ import { SaveManager } from "../managers/SaveManager";
 import { HudPanel } from "../ui/HudPanel";
 import { ShopPanel } from "../ui/ShopPanel";
 import { StatisticsWindow } from "../ui/StatisticsWindow";
+import { AchievementPointManager } from "../managers/AchievementPointManager";
 
 export class GameScene extends Phaser.Scene {
 
@@ -49,6 +52,12 @@ export class GameScene extends Phaser.Scene {
     private statistics =
         new StatisticsManager();
 
+    private achievements =
+        new AchievementManager();
+
+    private achievementPoints =
+        new AchievementPointManager();
+
     private hudPanel!:
         HudPanel;
 
@@ -57,6 +66,9 @@ export class GameScene extends Phaser.Scene {
 
     private statisticsWindow!:
         StatisticsWindow;
+
+    private achievementWindow!:
+        AchievementWindow;
 
     private nextSpawnTime = 0;
 
@@ -99,35 +111,59 @@ export class GameScene extends Phaser.Scene {
                 this
             );
 
+            this.achievementWindow =
+                new AchievementWindow(
+                    this,
+                    this.scale.width,
+                    this.scale.height
+                );
+            
+
+
+            const achievements =
+                this.achievements.getAchievements();
+
+            this.achievementWindow.setAchievements(
+                this.achievements.getAchievements()
+            );
+
         this.hudPanel =
             new HudPanel(
+
                 this,
+
                 () => this.trySpawnBall(),
+
                 () => {
 
                     const content = [
 
-                    "STATISTICS",
+                        "STATISTICS",
 
-                    "",
+                        "",
 
-                    `Total Money Earned: ${this.statistics.getTotalMoneyEarned()}`,
+                        `Total Money Earned: ${this.statistics.getTotalMoneyEarned()}`,
 
-                    `Balls Dropped: ${this.statistics.getTotalBallsDropped()}`,
+                        `Balls Dropped: ${this.statistics.getTotalBallsDropped()}`,
 
-                    `Golden Balls Dropped: ${this.statistics.getTotalGoldenBallsDropped()}`,
+                        `Golden Balls Dropped: ${this.statistics.getTotalGoldenBallsDropped()}`,
 
-                    "",
+                        "",
 
-                    `Current Money: ${Math.floor(
-                        this.economy.getMoney()
-                    )}`
+                        `Current Money: ${Math.floor(
+                            this.economy.getMoney()
+                        )}`
 
                     ].join("\n");
 
-                    this.statisticsWindow.show(
+                    this.statisticsWindow.toggle(
                         content
                     );
+                },
+
+                () => {
+
+                    this.achievementWindow.toggle();
                 }
             );
 
@@ -162,7 +198,55 @@ export class GameScene extends Phaser.Scene {
 
         this.updateHud();
 
+        this.statisticsWindow.updateContent(
+            this.buildStatisticsText()
+        );
+
+        this.achievements.update(
+
+            this.statistics,
+
+            achievement => {
+
+                this.economy.addMoney(
+                    achievement.reward
+                );
+
+                this.achievementPoints.add(
+                    achievement.reward
+                );
+
+                this.hudPanel.showMessage(
+                    `🏆 +${achievement.reward} AP`
+                );
+            }
+        );
+
+        this.achievementWindow.setAchievements(
+            this.achievements.getAchievements()
+        );
+
         this.processAutoDropper();
+    }
+
+    private buildStatisticsText():
+        string {
+
+        return [
+
+            `Total Money Earned: ${this.statistics.getTotalMoneyEarned()}`,
+
+            `Balls Dropped: ${this.statistics.getTotalBallsDropped()}`,
+
+            `Golden Balls Dropped: ${this.statistics.getTotalGoldenBallsDropped()}`,
+
+            "",
+
+            `Current Money: ${Math.floor(
+                this.economy.getMoney()
+            )}`
+
+        ].join("\n");
     }
 
     private updateHud(): void {
@@ -172,6 +256,8 @@ export class GameScene extends Phaser.Scene {
             this.economy.getMoney(),
 
             this.ballManager.getBallCount(),
+
+            this.achievementPoints.getPoints(),
 
             this.ballManager.getMaxBalls()
         );
@@ -895,6 +981,12 @@ export class GameScene extends Phaser.Scene {
             totalGoldenBallsDropped:
                 this.statistics.getTotalGoldenBallsDropped(),
 
+            achievementPoints:
+                this.achievementPoints.getPoints(),
+
+            achievements:
+                this.achievements.getAchievements(),
+
             lastSaveTime:
                 Date.now()
         });
@@ -937,6 +1029,19 @@ export class GameScene extends Phaser.Scene {
 
         save.totalGoldenBallsDropped
         );
+
+        this.achievementPoints.setPoints(
+            save.achievementPoints ?? 0
+        );
+
+        if (
+            save.achievements && save.achievements.length > 0
+        ) {
+
+            this.achievements.setAchievements(
+                save.achievements
+            );
+        }
 
         return save.lastSaveTime;
     }

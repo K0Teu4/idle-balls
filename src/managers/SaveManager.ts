@@ -1,3 +1,5 @@
+import type { Achievement } from "../game/Achievement";
+
 export interface SaveData {
 
     version: number;
@@ -17,6 +19,10 @@ export interface SaveData {
     totalBallsDropped: number;
 
     totalGoldenBallsDropped: number;
+
+    achievementPoints: number;
+
+    achievements: Achievement[];
 
     lastSaveTime: number;
 }
@@ -62,6 +68,8 @@ export class SaveManager {
             parsed.totalMoneyEarned ??= 0;
             parsed.totalBallsDropped ??= 0;
             parsed.totalGoldenBallsDropped ??= 0;
+            parsed.achievementPoints ??= 0;
+            parsed.achievements ??= [];
 
             if (
                 !this.isValidSave(
@@ -119,9 +127,16 @@ export class SaveManager {
 
             typeof save.totalBallsDropped ===
                 "number" &&
-
+                
             typeof save.totalGoldenBallsDropped ===
                 "number" &&
+
+            typeof save.achievementPoints ===
+                "number" &&
+
+            Array.isArray(
+                save.achievements
+            ) &&
 
             typeof save.lastSaveTime ===
                 "number"

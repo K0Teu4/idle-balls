@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { formatNumber } from "../utils/NumberFormatter";
 
 export class StatisticsWindow {
 
@@ -7,9 +8,6 @@ export class StatisticsWindow {
 
     private text:
         Phaser.GameObjects.Text;
-
-    private currentContent =
-        "";
 
     constructor(
         scene: Phaser.Scene

@@ -21,6 +21,7 @@ import { MultiplierManager } from "../managers/MultiplierManager";
 import { BallCapacityManager } from "../managers/BallCapacityManager";
 import { GoldenBallManager } from "../managers/GoldenBallManager";
 import { SaveManager } from "../managers/SaveManager";
+import { formatNumber } from "../utils/NumberFormatter";
 
 import { HudPanel } from "../ui/HudPanel";
 import { ShopPanel } from "../ui/ShopPanel";
@@ -242,9 +243,7 @@ export class GameScene extends Phaser.Scene {
 
             "",
 
-            `Current Money: ${Math.floor(
-                this.economy.getMoney()
-            )}`
+            `Current Money: ${formatNumber(this.economy.getMoney())}`
 
         ].join("\n");
     }
@@ -797,7 +796,7 @@ export class GameScene extends Phaser.Scene {
                     this,
                     ballX,
                     slotLine - 25,
-                    `+${reward}`
+                    `+${formatNumber(reward)}`
                 );
 
                 ball.destroy(
@@ -896,7 +895,7 @@ export class GameScene extends Phaser.Scene {
                     `Away: ${this.formatOfflineTime(secondsAway)}`,
                     "",
                     `Offline Earnings`,
-                    `+${income}`
+                    `+${formatNumber(income)}`
                 ].join("\n"),
                 {
                     fontSize: "28px",

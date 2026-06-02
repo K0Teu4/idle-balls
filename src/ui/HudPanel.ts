@@ -1,7 +1,7 @@
 import Phaser from "phaser";
-
 import { UIButton } from "./UIButton";
 import { UIColors } from "./UIColors";
+import { formatNumber } from "../utils/NumberFormatter";
 
 export class HudPanel {
 
@@ -140,18 +140,16 @@ export class HudPanel {
         );
     }
 
-    update(
-        money: number,
-        currentBalls: number,
-        ap: number,
-        maxBalls: number
-    ): void {
+        update(
+            money: number,
+            currentBalls: number,
+            ap: number,
+            maxBalls: number
+        ): void {
 
-        this.moneyText.setText(
-            `Money: ${Math.floor(
-                money
-            )}`
-        );
+            this.moneyText.setText(
+                `Money: ${formatNumber(money)}`
+            );
 
         this.ballsText.setText(
             `Balls: ${currentBalls}/${maxBalls}`

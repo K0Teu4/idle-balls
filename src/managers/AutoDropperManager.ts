@@ -17,9 +17,9 @@ export class AutoDropperManager {
     getCost(): number {
 
         return Math.floor(
-            25 *
+            15 *
             Math.pow(
-                2.5,
+                2.0,
                 this.level
             )
         );

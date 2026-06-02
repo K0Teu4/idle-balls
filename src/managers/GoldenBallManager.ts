@@ -34,7 +34,7 @@ export class GoldenBallManager {
         return Math.floor(
             250 *
             Math.pow(
-                1.8,
+                1.55,
                 this.level
             )
         );

@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { formatNumber } from "../utils/NumberFormatter";
 
 export class FloatingText {
 

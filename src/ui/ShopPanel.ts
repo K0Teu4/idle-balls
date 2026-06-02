@@ -1,7 +1,7 @@
 import Phaser from "phaser";
-
 import { ShopItem } from "./ShopItem";
 import { UIColors } from "./UIColors";
+import { formatNumber } from "../utils/NumberFormatter";
 
 export class ShopPanel {
 
@@ -85,20 +85,16 @@ export class ShopPanel {
             );
     }
 
-    update(
-
+        update(
         autoDropperLevel: number,
         autoDropperCost: number,
         autoDropperRate: number,
-
         multiplierLevel: number,
         multiplierValue: number,
         multiplierCost: number,
-
         capacityLevel: number,
         capacityValue: number,
         capacityCost: number,
-
         goldenBallLevel: number,
         goldenBallChance: number,
         goldenBallCost: number
@@ -106,26 +102,26 @@ export class ShopPanel {
 
         this.autoDropperItem.setInfo([
             `Level: ${autoDropperLevel}`,
-            `Cost: ${autoDropperCost}`,
+            `Cost: ${formatNumber(autoDropperCost)}`,
             `Rate: ${autoDropperRate}/sec`
         ]);
 
         this.multiplierItem.setInfo([
             `Level: ${multiplierLevel}`,
             `Value: x${multiplierValue.toFixed(2)}`,
-            `Cost: ${multiplierCost}`
+            `Cost: ${formatNumber(multiplierCost)}`
         ]);
 
         this.capacityItem.setInfo([
             `Level: ${capacityLevel}`,
             `Capacity: ${capacityValue}`,
-            `Cost: ${capacityCost}`
+            `Cost: ${formatNumber(capacityCost)}`
         ]);
 
         this.goldenBallItem.setInfo([
             `Level: ${goldenBallLevel}`,
             `Chance: ${goldenBallChance}%`,
-            `Cost: ${goldenBallCost}`
+            `Cost: ${formatNumber(goldenBallCost)}`
         ]);
     }
 }

@@ -1,10 +1,10 @@
+import { EconomyConfig } from "../config/EconomyConfig";
+
 export class AutoDropperManager {
 
     private level = 0;
 
-    setLevel(
-        level: number
-    ): void {
+    setLevel(level: number): void {
 
         this.level = level;
     }
@@ -17,9 +17,9 @@ export class AutoDropperManager {
     getCost(): number {
 
         return Math.floor(
-            15 *
+            EconomyConfig.AUTO_DROPPER_BASE_COST *
             Math.pow(
-                2.0,
+                EconomyConfig.AUTO_DROPPER_COST_MULT,
                 this.level
             )
         );

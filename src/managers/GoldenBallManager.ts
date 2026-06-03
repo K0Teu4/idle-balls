@@ -1,3 +1,5 @@
+import { EconomyConfig } from "../config/EconomyConfig";
+
 export class GoldenBallManager {
 
     private level = 0;
@@ -7,9 +9,7 @@ export class GoldenBallManager {
         return this.level;
     }
 
-    setLevel(
-        level: number
-    ): void {
+    setLevel(level: number): void {
 
         this.level = level;
     }
@@ -21,20 +21,23 @@ export class GoldenBallManager {
 
     getChance(): number {
 
-        return this.level;
+        return Math.min(
+            this.level,
+            EconomyConfig.GOLDEN_BALL_MAX_CHANCE
+        );
     }
 
     getRewardMultiplier(): number {
 
-        return 5;
+        return EconomyConfig.GOLDEN_BALL_REWARD_MULT;
     }
 
     getCost(): number {
 
         return Math.floor(
-            250 *
+            EconomyConfig.GOLDEN_BALL_BASE_COST *
             Math.pow(
-                1.55,
+                EconomyConfig.GOLDEN_BALL_COST_MULT,
                 this.level
             )
         );

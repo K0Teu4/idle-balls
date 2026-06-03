@@ -98,4 +98,21 @@ export class BallManager {
 
         return this.balls;
     }
+
+    findByBody(
+        body: MatterJS.BodyType
+    ): Ball | null {
+
+        for (const ball of this.balls) {
+
+            if (
+                ball.body.id === body.id &&
+                !ball.destroyed
+            ) {
+                return ball;
+            }
+        }
+
+        return null;
+    }
 }

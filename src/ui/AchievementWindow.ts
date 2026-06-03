@@ -2,15 +2,27 @@ import Phaser from "phaser";
 import type { Achievement } from "../game/Achievement";
 import { AchievementItem } from "./AchievementItem";
 
+const PANEL_W = 420;
+
+const PANEL_H = 540;
+
+const HEADER_H = 52;
+
+const ITEM_HEIGHT = 100;
+
+const LIST_H = PANEL_H - HEADER_H - 16;
+
 export class AchievementWindow extends Phaser.GameObjects.Container {
 
-    private readonly items:
-        AchievementItem[] = [];
+    private readonly items = new Map<string, AchievementItem>();
 
-    private readonly content:
-        Phaser.GameObjects.Container;
+    private readonly scrollContent: Phaser.GameObjects.Container;
+
+    private readonly listMaskGraphics: Phaser.GameObjects.Graphics;
 
     private scrollOffset = 0;
+
+    private built = false;
 
     constructor(
         scene: Phaser.Scene,
@@ -18,241 +30,168 @@ export class AchievementWindow extends Phaser.GameObjects.Container {
         height: number
     ) {
 
-        super(
-            scene,
-            width / 2 - 180,
-            height / 2 - 250
-        );
-        
-        const overlay =
-            scene.add.rectangle(
-                -500,
-                -500,
-                3000,
-                3000,
-                0x000000,
-                0.55
-            )
-            .setOrigin(
-                0,
-                0
-            );
+        super(scene, width / 2 - PANEL_W / 2, height / 2 - PANEL_H / 2);
+
+        const overlay = scene.add
+            .rectangle(-1200, -1200, 4000, 4000, 0x000000, 0.68)
+            .setOrigin(0, 0)
+            .setInteractive();
+
+        overlay.on("pointerup", () => this.hide());
+        this.add(overlay);
+
+        const panel = scene.add
+            .rectangle(0, 0, PANEL_W, PANEL_H, 0x181818, 1)
+            .setOrigin(0, 0)
+            .setStrokeStyle(2, 0x4a4a4a);
+
+        this.add(panel);
 
         this.add(
-            overlay
-        );  
-        
-        const background =
-            scene.add.rectangle(
-                0,
-                0,
-                360,
-                500,
-                0x111111
-            )
-            .setOrigin(
-                0,
-                0
-            );
-
-        background.setStrokeStyle(
-            2,
-            0x444444
+            scene.add.text(20, 16, "ACHIEVEMENTS", {
+                fontSize: "22px",
+                color: "#f0f0f0",
+                fontStyle: "bold"
+            })
         );
 
-        const title =
-            scene.add.text(
-                20,
-                15,
-                "Achievements",
-                {
-                    fontSize: "24px",
-                    color: "#ffffff"
-                }
-            );
-
-        const closeButton =
-            scene.add.text(
-                330,
-                20,
-                "✕",
-                {
-                    fontSize: "28px",
-                    color: "#ff6666"
-                }
-            )
+        const closeButton = scene.add
+            .text(PANEL_W - 22, 24, "✕", {
+                fontSize: "26px",
+                color: "#ff6666"
+            })
             .setOrigin(0.5)
-            .setInteractive({
-                useHandCursor: true
-            });
+            .setInteractive({ useHandCursor: true });
 
-        closeButton.on(
-            "pointerup",
-            () => {
+        closeButton.on("pointerup", () => this.hide());
+        this.add(closeButton);
 
-                this.hide();
-            }
+        this.listMaskGraphics = scene.add.graphics();
+        this.listMaskGraphics.fillStyle(0xffffff);
+        this.listMaskGraphics.fillRect(
+            12,
+            HEADER_H,
+            PANEL_W - 24,
+            LIST_H
         );
 
-        this.content =
-            scene.add.container(
-                0,
-                0
-            );
+        const mask = this.listMaskGraphics.createGeometryMask();
+        this.listMaskGraphics.setVisible(false);
 
-        this.add(
-            background
+        this.scrollContent = scene.add.container(12, HEADER_H);
+        this.scrollContent.setMask(mask);
+
+        this.add(this.listMaskGraphics);
+        this.add(this.scrollContent);
+
+        const clipBottom = scene.add.rectangle(
+            PANEL_W / 2,
+            PANEL_H - 4,
+            PANEL_W - 4,
+            8,
+            0x181818,
+            1
         );
 
-        this.add(
-            title
-        );
-
-        this.add(
-            closeButton
-        );
-
-        this.add(
-            this.content
-        );
+        this.add(clipBottom);
 
         scene.input.on(
-
             "wheel",
-
             (
                 pointer: Phaser.Input.Pointer,
-
-                gameObjects: Phaser.GameObjects.GameObject[],
-
-                deltaX: number,
-
-                deltaY: number
+                _o: Phaser.GameObjects.GameObject[],
+                _dx: number,
+                dy: number
             ) => {
 
-                if (
-                    !this.visible
-                ) {
+                if (!this.visible) {
                     return;
                 }
 
-                this.scrollOffset +=
-                    deltaY * 0.5;
+                const bounds = this.getBounds();
 
-                this.scrollOffset =
-                    Math.max(
-                        this.scrollOffset,
-                        0
-                    );
+                if (!bounds.contains(pointer.x, pointer.y)) {
+                    return;
+                }
 
-                this.updateScroll();
+                this.scrollOffset += dy * 0.45;
+                this.applyScroll();
             }
         );
 
-        this.setVisible(
-            false
-        );
-
-        scene.add.existing(
-            this
-        );
-
-        this.setDepth(
-            10000
-        );
+        this.setVisible(false);
+        this.setDepth(10000);
+        scene.add.existing(this);
     }
 
-    setAchievements(
+    syncAchievements(
         achievements: Achievement[]
     ): void {
 
-        this.items.forEach(
-            item => item.destroy()
-        );
+        if (!this.built) {
+            this.buildItems(achievements);
+            this.built = true;
+            return;
+        }
 
-        this.items.length = 0;
-
-        this.content.removeAll(
-            true
-        );
-
-        let y = 60;
-
-        achievements.forEach(
-            achievement => {
-
-                const item =
-                    new AchievementItem(    
-                        this.scene,
-                        15,
-                        y,
-                        achievement
-                    );
-
-                this.items.push(
-                    item
-                );
-
-                this.content.add(
-                    item
-                );
-
-                y += 110;
-            }
-        );
-
-        this.updateScroll();
+        for (const a of achievements) {
+            this.items.get(a.id)?.updateData(a);
+        }
     }
 
-    private updateScroll(): void {
+    private buildItems(
+        achievements: Achievement[]
+    ): void {
 
-        const contentHeight =
-            this.items.length * 110;
+        let y = 6;
 
-        const visibleHeight =
-            420;
+        for (const achievement of achievements) {
 
-        const maxScroll =
-            Math.max(
-                0,
-                contentHeight -
-                visibleHeight
+            const item = new AchievementItem(
+                this.scene,
+                4,
+                y,
+                achievement
             );
 
-        this.scrollOffset =
-            Phaser.Math.Clamp(
-                this.scrollOffset,
-                0,
-                maxScroll
-            );
+            this.items.set(achievement.id, item);
+            this.scrollContent.add(item);
+            y += ITEM_HEIGHT;
+        }
 
-        this.content.y =
-            -this.scrollOffset;
+        this.applyScroll();
+    }
+
+    private applyScroll(): void {
+
+        const maxScroll = Math.max(
+            0,
+            this.items.size * ITEM_HEIGHT - LIST_H + 12
+        );
+
+        this.scrollOffset = Phaser.Math.Clamp(
+            this.scrollOffset,
+            0,
+            maxScroll
+        );
+
+        this.scrollContent.y =
+            HEADER_H - this.scrollOffset;
     }
 
     show(): void {
 
-    this.setVisible(
-        true
-    );
+        this.setVisible(true);
+        this.applyScroll();
     }
 
     hide(): void {
 
-        this.setVisible(
-            false
-        );
-    }
-
-    isVisible(): boolean {
-
-        return this.visible;
+        this.setVisible(false);
     }
 
     toggle(): void {
 
-        this.setVisible(
-            !this.visible
-        );
+        this.setVisible(!this.visible);
     }
 }

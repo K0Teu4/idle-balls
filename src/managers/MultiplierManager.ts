@@ -1,44 +1,45 @@
+import { EconomyConfig } from "../config/EconomyConfig";
+
 export class MultiplierManager {
-private level = 0;
 
-setLevel(
-    level: number
-): void {
+    private level = 0;
 
-    this.level = level;
-}
+    setLevel(level: number): void {
 
-getLevel(): number {
+        this.level = level;
+    }
 
-    return this.level;
-}
+    getLevel(): number {
 
-getMultiplier(): number {
+        return this.level;
+    }
 
-    const linear =
-        0.25 * this.level;
+    getMultiplier(): number {
 
-    const logPart =
-        0.55 * Math.log(1 + 0.25 * this.level);
+        const linear =
+            0.5 * this.level;
 
-    return Number(
-        (1 + linear + logPart).toFixed(2)
-    );
-}
+        const logPart =
+            0.8 * Math.log(1 + 0.35 * this.level);
 
-getCost(): number {
+        return Number(
+            (1 + linear + logPart).toFixed(2)
+        );
+    }
 
-    return Math.floor(
-        50 *
-        Math.pow(
-            1.35,
-            this.level
-        )
-    );
-}
+    getCost(): number {
 
-buy(): void {
+        return Math.floor(
+            EconomyConfig.MULTIPLIER_BASE_COST *
+            Math.pow(
+                EconomyConfig.MULTIPLIER_COST_MULT,
+                this.level
+            )
+        );
+    }
 
-    this.level++;
-}
+    buy(): void {
+
+        this.level++;
+    }
 }

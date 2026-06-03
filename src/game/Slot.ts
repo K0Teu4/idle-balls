@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { formatSlotDisplayValue } from "../utils/SlotMath";
 
 export class Slot {
 
@@ -8,8 +9,7 @@ export class Slot {
 
     width: number;
 
-    label:
-        Phaser.GameObjects.Text;
+    label: Phaser.GameObjects.Text;
 
     constructor(
         scene: Phaser.Scene,
@@ -21,9 +21,7 @@ export class Slot {
     ) {
 
         this.value = value;
-
         this.x = x;
-
         this.width = width;
 
         scene.add.rectangle(
@@ -47,29 +45,27 @@ export class Slot {
             .setOrigin(0.5);
     }
 
-    updateLabel(
-        multiplier: number
-    ): void {
-
-        const finalValue =
-            (
-                this.value *
-                multiplier
-            ).toFixed(2);
+    updateLabel(multiplier: number): void {
 
         this.label.setText(
-            `x${finalValue}`
+            `x${formatSlotDisplayValue(
+                this.value,
+                multiplier
+            )}`
         );
     }
 
-    contains(
-        worldX: number
-    ): boolean {
+    contains(worldX: number): boolean {
 
         return (
             worldX >= this.x &&
-            worldX <
-            this.x + this.width
+            worldX < this.x + this.width
         );
+    }
+
+    highlightJackpot(): void {
+
+        this.label.setColor("#ffd700");
+        this.label.setFontSize(22);
     }
 }

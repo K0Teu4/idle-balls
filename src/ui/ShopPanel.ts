@@ -2,126 +2,203 @@ import Phaser from "phaser";
 import { ShopItem } from "./ShopItem";
 import { UIColors } from "./UIColors";
 import { formatNumber } from "../utils/NumberFormatter";
+import { SHOP_X, SHOP_WIDTH } from "../config/GameConfig";
+
+export interface ShopPanelState {
+
+    money: number;
+
+    autoDropperLevel: number;
+    autoDropperCost: number;
+    autoDropperRate: number;
+
+    multiplierLevel: number;
+    multiplierValue: number;
+    multiplierCost: number;
+
+    capacityLevel: number;
+    capacityValue: number;
+    capacityCost: number;
+
+    goldenBallLevel: number;
+    goldenBallChance: number;
+    goldenBallCost: number;
+
+    luckyPegLevel: number;
+    luckyPegLines: string[];
+    luckyPegCost: number;
+
+    speedBoostLevel: number;
+    speedBoostLines: string[];
+    speedBoostCost: number;
+}
+
+interface ShopEntry {
+
+    item: ShopItem;
+
+    getCost: (s: ShopPanelState) => number;
+}
 
 export class ShopPanel {
 
-    private autoDropperItem:
-        ShopItem;
+    private readonly root: Phaser.GameObjects.Container;
 
-    private multiplierItem:
-        ShopItem;
+    private readonly entries: ShopEntry[] = [];
 
-    private capacityItem:
-        ShopItem;
+    private scrollOffset = 0;
 
-    private goldenBallItem:
-        ShopItem;
+    private maxScroll = 0;
 
     constructor(
-
         scene: Phaser.Scene,
-
-        onBuyAutoDropper:
-            () => void,
-
-        onBuyMultiplier:
-            () => void,
-
-        onBuyCapacity:
-            () => void,
-
-        onBuyGoldenBall:
-            () => void
+        onBuyAutoDropper: () => void,
+        onBuyMultiplier: () => void,
+        onBuyCapacity: () => void,
+        onBuyGoldenBall: () => void,
+        onBuyLuckyPeg: () => void,
+        onBuySpeedBoost: () => void
     ) {
 
+        const panelBg = scene.add.rectangle(
+            SHOP_X - 8,
+            0,
+            SHOP_WIDTH + 16,
+            720,
+            0x121212
+        )
+        .setOrigin(0, 0)
+        .setDepth(-1);
+
         scene.add.text(
-            980,
-            30,
+            SHOP_X + 12,
+            14,
             "SHOP",
-            {
-                fontSize: "32px",
-                color: UIColors.text
+            { fontSize: "26px", color: UIColors.text }
+        )
+        .setDepth(0);
+
+        const maskGfx = scene.make.graphics({});
+        maskGfx.fillStyle(0xffffff);
+        maskGfx.fillRect(
+            SHOP_X,
+            52,
+            SHOP_WIDTH,
+            658
+        );
+
+        const mask = maskGfx.createGeometryMask();
+
+        this.root = scene.add.container(SHOP_X, 58);
+        this.root.setMask(mask);
+
+        const itemWidth = SHOP_WIDTH - 24;
+        const itemHeight = 100;
+        const gap = 8;
+        let y = 0;
+
+        const add = (
+            title: string,
+            color: string,
+            buy: () => void,
+            getCost: (s: ShopPanelState) => number
+        ) => {
+
+            const item = new ShopItem(
+                scene,
+                0,
+                y,
+                title,
+                color,
+                buy,
+                itemHeight,
+                itemWidth
+            );
+
+            this.entries.push({ item, getCost });
+            this.root.add(item.getContainer());
+            y += itemHeight + gap;
+        };
+
+        add("⚙ Auto Dropper", UIColors.autoDropper, onBuyAutoDropper, s => s.autoDropperCost);
+        add("✦ Multiplier", UIColors.multiplier, onBuyMultiplier, s => s.multiplierCost);
+        add("⬒ Capacity", UIColors.capacity, onBuyCapacity, s => s.capacityCost);
+        add("★ Golden", "#ffd700", onBuyGoldenBall, s => s.goldenBallCost);
+        add("☘ Lucky Peg", "#7dffb2", onBuyLuckyPeg, s => s.luckyPegCost);
+        add("⚡ Speed", "#ffaa44", onBuySpeedBoost, s => s.speedBoostCost);
+
+        this.maxScroll = Math.max(0, y - 640);
+
+        scene.input.on(
+            "wheel",
+            (
+                pointer: Phaser.Input.Pointer,
+                _o: Phaser.GameObjects.GameObject[],
+                _dx: number,
+                dy: number
+            ) => {
+
+                if (
+                    pointer.x < SHOP_X ||
+                    pointer.x > SHOP_X + SHOP_WIDTH
+                ) {
+                    return;
+                }
+
+                this.scrollOffset += dy * 0.5;
+                this.applyScroll();
             }
         );
 
-        this.autoDropperItem =
-            new ShopItem(
-                scene,
-                950,
-                80,
-                "⚙ Auto Dropper",
-                UIColors.autoDropper,
-                onBuyAutoDropper
-            );
-
-        this.multiplierItem =
-            new ShopItem(
-                scene,
-                950,
-                230,
-                "✦ Multiplier",
-                UIColors.multiplier,
-                onBuyMultiplier
-            );
-
-        this.capacityItem =
-            new ShopItem(
-                scene,
-                950,
-                380,
-                "⬒ Ball Capacity",
-                UIColors.capacity,
-                onBuyCapacity
-            );
-
-        this.goldenBallItem =
-            new ShopItem(
-                scene,
-                950,
-                530,
-                "★ Golden Balls",
-                "#ffd700",
-                onBuyGoldenBall
-            );
+        panelBg.setScrollFactor(0);
     }
 
-        update(
-        autoDropperLevel: number,
-        autoDropperCost: number,
-        autoDropperRate: number,
-        multiplierLevel: number,
-        multiplierValue: number,
-        multiplierCost: number,
-        capacityLevel: number,
-        capacityValue: number,
-        capacityCost: number,
-        goldenBallLevel: number,
-        goldenBallChance: number,
-        goldenBallCost: number
-    ): void {
+    update(state: ShopPanelState): void {
 
-        this.autoDropperItem.setInfo([
-            `Level: ${autoDropperLevel}`,
-            `Cost: ${formatNumber(autoDropperCost)}`,
-            `Rate: ${autoDropperRate}/sec`
-        ]);
+        const infos = [
+            [
+                `Lv ${state.autoDropperLevel} • ${state.autoDropperRate}/s`,
+                `Cost ${formatNumber(state.autoDropperCost)}`
+            ],
+            [
+                `Lv ${state.multiplierLevel} • ×${state.multiplierValue.toFixed(2)}`,
+                `Cost ${formatNumber(state.multiplierCost)}`
+            ],
+            [
+                `Lv ${state.capacityLevel} • ${state.capacityValue} max`,
+                `Cost ${formatNumber(state.capacityCost)}`
+            ],
+            [
+                `Lv ${state.goldenBallLevel} • ${state.goldenBallChance}%`,
+                `Cost ${formatNumber(state.goldenBallCost)}`
+            ],
+            [
+                ...state.luckyPegLines,
+                `Cost ${formatNumber(state.luckyPegCost)}`
+            ],
+            [
+                ...state.speedBoostLines,
+                `Cost ${formatNumber(state.speedBoostCost)}`
+            ]
+        ];
 
-        this.multiplierItem.setInfo([
-            `Level: ${multiplierLevel}`,
-            `Value: x${multiplierValue.toFixed(2)}`,
-            `Cost: ${formatNumber(multiplierCost)}`
-        ]);
+        this.entries.forEach((entry, i) => {
 
-        this.capacityItem.setInfo([
-            `Level: ${capacityLevel}`,
-            `Capacity: ${capacityValue}`,
-            `Cost: ${formatNumber(capacityCost)}`
-        ]);
+            const cost = entry.getCost(state);
 
-        this.goldenBallItem.setInfo([
-            `Level: ${goldenBallLevel}`,
-            `Chance: ${goldenBallChance}%`,
-            `Cost: ${formatNumber(goldenBallCost)}`
-        ]);
+            entry.item.setInfo(infos[i] ?? []);
+            entry.item.setAffordable(state.money >= cost);
+        });
+    }
+
+    private applyScroll(): void {
+
+        this.scrollOffset = Phaser.Math.Clamp(
+            this.scrollOffset,
+            0,
+            this.maxScroll
+        );
+
+        this.root.y = 58 - this.scrollOffset;
     }
 }

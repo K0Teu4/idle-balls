@@ -22,5 +22,13 @@ export const UIColors = {
 
     text: "#ffffff",
 
-    secondaryText: "#bdbdbd"
+    secondaryText: "#bdbdbd",
+
+    affordable: 0x3dd68c,
+
+    buttonDisabled: 0x444444,
+
+    combo: "#ff88cc",
+
+    dailyReady: 0x886622
 };

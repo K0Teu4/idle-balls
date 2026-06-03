@@ -1,6 +1,7 @@
-export enum BallType {
+export const BallType = {
+    Normal: "normal",
+    Golden: "golden"
+} as const;
 
-    Normal,
-
-    Golden
-}
+export type BallType =
+    (typeof BallType)[keyof typeof BallType];

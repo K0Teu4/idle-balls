@@ -1,4 +1,5 @@
 import type { Achievement } from "../game/Achievement";
+import { migrateSave } from "./SaveMigrator";
 
 export interface SaveData {
 
@@ -14,6 +15,10 @@ export interface SaveData {
 
     goldenBallLevel: number;
 
+    luckyPegLevel: number;
+
+    speedBoostLevel: number;
+
     totalMoneyEarned: number;
 
     totalBallsDropped: number;
@@ -25,6 +30,32 @@ export interface SaveData {
     achievements: Achievement[];
 
     lastSaveTime: number;
+
+    totalPlayTimeSeconds: number;
+
+    highestSingleReward: number;
+
+    totalShopPurchases: number;
+
+    apIncomeBoostLevel: number;
+
+    apBallDiscountLevel: number;
+
+    apGoldenBoostLevel: number;
+
+    apComboBoostLevel: number;
+
+    bestCombo: number;
+
+    totalSlotHits: number;
+
+    totalPegBonuses: number;
+
+    totalPegBonusMoney: number;
+
+    dailyLastClaimDay: string;
+
+    dailyStreak: number;
 }
 
 export class SaveManager {
@@ -32,9 +63,7 @@ export class SaveManager {
     private static readonly KEY =
         "idle-balls-save";
 
-    static save(
-        data: SaveData
-    ): void {
+    static save(data: SaveData): void {
 
         localStorage.setItem(
             this.KEY,
@@ -45,9 +74,7 @@ export class SaveManager {
     static load(): SaveData | null {
 
         const raw =
-            localStorage.getItem(
-                this.KEY
-            );
+            localStorage.getItem(this.KEY);
 
         if (!raw) {
             return null;
@@ -56,7 +83,7 @@ export class SaveManager {
         try {
 
             const parsed =
-                JSON.parse(raw);
+                JSON.parse(raw) as Record<string, unknown>;
 
             if (
                 typeof parsed !== "object" ||
@@ -65,21 +92,11 @@ export class SaveManager {
                 return null;
             }
 
-            parsed.totalMoneyEarned ??= 0;
-            parsed.totalBallsDropped ??= 0;
-            parsed.totalGoldenBallsDropped ??= 0;
-            parsed.achievementPoints ??= 0;
-            parsed.achievements ??= [];
-
-            if (
-                !this.isValidSave(
-                    parsed
-                )
-            ) {
+            if (!this.isValidRaw(parsed)) {
                 return null;
             }
 
-            return parsed;
+            return migrateSave(parsed);
 
         } catch {
 
@@ -87,59 +104,26 @@ export class SaveManager {
         }
     }
 
-    private static isValidSave(
-        data: unknown
-    ): data is SaveData {
+    private static isValidRaw(
+        data: Record<string, unknown>
+    ): boolean {
 
-        if (
-            typeof data !==
-            "object"
-            || data === null
-        ) {
-            return false;
+        const requiredNumbers = [
+            "money",
+            "autoDropperLevel",
+            "multiplierLevel",
+            "ballCapacityLevel",
+            "goldenBallLevel",
+            "lastSaveTime"
+        ];
+
+        for (const key of requiredNumbers) {
+
+            if (typeof data[key] !== "number") {
+                return false;
+            }
         }
 
-        const save =
-            data as SaveData;
-
-        return (
-
-            typeof save.version ===
-                "number" &&
-
-            typeof save.money ===
-                "number" &&
-
-            typeof save.autoDropperLevel ===
-                "number" &&
-
-            typeof save.multiplierLevel ===
-                "number" &&
-
-            typeof save.ballCapacityLevel ===
-                "number" &&
-
-            typeof save.goldenBallLevel ===
-                "number" &&
-
-            typeof save.totalMoneyEarned ===
-                "number" &&
-
-            typeof save.totalBallsDropped ===
-                "number" &&
-                
-            typeof save.totalGoldenBallsDropped ===
-                "number" &&
-
-            typeof save.achievementPoints ===
-                "number" &&
-
-            Array.isArray(
-                save.achievements
-            ) &&
-
-            typeof save.lastSaveTime ===
-                "number"
-        );
+        return true;
     }
 }

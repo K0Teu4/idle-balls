@@ -249,7 +249,7 @@ export class HudPanel {
         );
 
         this.ballsText.setText(
-            `Balls: ${state.currentBalls}/${state.maxBalls}  •  ${formatNumber(state.ballCost)}/drop`
+            `Balls: ${state.currentBalls}/${state.maxBalls} • ${formatNumber(state.ballCost)}/drop`
         );
 
         this.apText.setText(

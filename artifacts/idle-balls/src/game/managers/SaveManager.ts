@@ -23,6 +23,15 @@ export interface SaveData {
     lastDailyDate: string | null;
     dailyStreak: number;
     lastSaveTime: number;
+    // Prestige
+    prestigeCount: number;
+    prestigeTotalPP: number;
+    prestigeSpentPP: number;
+    prestigeShopLevels: Record<string, number>;
+    // New tracked stats
+    critCount: number;
+    starHitCount: number;
+    totalPegBonusCount: number;
 }
 
 const KEY = "idle-balls-save-v4";
@@ -67,6 +76,13 @@ export class SaveManager {
                 lastDailyDate: parsed.lastDailyDate ?? null,
                 dailyStreak: parsed.dailyStreak ?? 0,
                 lastSaveTime: parsed.lastSaveTime ?? Date.now(),
+                prestigeCount: parsed.prestigeCount ?? 0,
+                prestigeTotalPP: parsed.prestigeTotalPP ?? 0,
+                prestigeSpentPP: parsed.prestigeSpentPP ?? 0,
+                prestigeShopLevels: parsed.prestigeShopLevels ?? {},
+                critCount: parsed.critCount ?? 0,
+                starHitCount: parsed.starHitCount ?? 0,
+                totalPegBonusCount: parsed.totalPegBonusCount ?? 0,
             };
         } catch {
             return null;

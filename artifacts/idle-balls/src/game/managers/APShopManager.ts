@@ -44,6 +44,22 @@ export const AP_UPGRADES: APUpgrade[] = [
         baseCost: 10,
         costPerLevel: 20,
     },
+    {
+        id: "critical_hit",
+        title: "Critical Strike",
+        description: "+0.5% crit chance & +0.5× crit power per level",
+        effectLine: (l) => `${(2 + l * 0.5).toFixed(1)}% chance, ×${(5 + l * 0.5).toFixed(1)} power`,
+        baseCost: 15,
+        costPerLevel: 25,
+    },
+    {
+        id: "multi_ball",
+        title: "Multi Ball",
+        description: "+1.5% chance to spawn free bonus ball on slot hit",
+        effectLine: (l) => `${(l * 1.5).toFixed(1)}% bonus ball chance`,
+        baseCost: 20,
+        costPerLevel: 30,
+    },
 ];
 
 export class APShopManager {
@@ -97,4 +113,8 @@ export class APShopManager {
     getComboStackBonus(): number {
         return Math.floor(this.getLevel("combo_mastery") / 2);
     }
+
+    getCritChancePct(): number { return this.getLevel("critical_hit") * 0.5; }
+    getCritPowerBonus(): number { return this.getLevel("critical_hit") * 0.5; }
+    getMultiBallChancePct(): number { return this.getLevel("multi_ball") * 1.5; }
 }

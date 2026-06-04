@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 
-import { GAME_AREA, SLOT_VALUES, SLOT_HEIGHT, PEG_ROWS, PEG_SPACING_X, PEG_SPACING_Y, PEG_START_Y, PEG_RADIUS, BALL_RADIUS } from "../config/GameConfig";
+import { GAME_AREA, SLOT_VALUES, SLOT_HEIGHT, PEG_ROWS, PEG_SPACING_X, PEG_SPACING_Y, PEG_START_Y } from "../config/GameConfig";
 import { EconomyConfig } from "../config/EconomyConfig";
 
 import { Ball } from "../objects/Ball";
@@ -25,6 +25,8 @@ import { AchievementManager } from "../managers/AchievementManager";
 import { APManager } from "../managers/APManager";
 import { APShopManager } from "../managers/APShopManager";
 import { DailyBonusManager } from "../managers/DailyBonusManager";
+import { PrestigeManager } from "../managers/PrestigeManager";
+import { CritManager } from "../managers/CritManager";
 import { SaveManager, SaveData } from "../managers/SaveManager";
 
 import { HudPanel } from "../ui/HudPanel";
@@ -33,10 +35,12 @@ import { StatisticsWindow } from "../ui/StatisticsWindow";
 import { AchievementsWindow } from "../ui/AchievementsWindow";
 import { APShopWindow } from "../ui/APShopWindow";
 import { DailyBonusWindow } from "../ui/DailyBonusWindow";
+import { PrestigeWindow } from "../ui/PrestigeWindow";
 
 import { fmt } from "../utils/NumberFormat";
 
 export class GameScene extends Phaser.Scene {
+    // Core managers
     private economy = new EconomyManager();
     private ballManager!: BallManager;
     private autoDropper = new AutoDropperManager();
@@ -51,25 +55,42 @@ export class GameScene extends Phaser.Scene {
     private ap = new APManager();
     private apShop = new APShopManager();
     private dailyBonus = new DailyBonusManager();
+    private prestige = new PrestigeManager();
+    private crit = new CritManager();
 
+    // Game objects
     private slots: Slot[] = [];
-    private pegFlashMap: Map<string, Phaser.GameObjects.Arc> = new Map();
+    private pegs: Peg[] = [];
+    private pegBodyMap: Map<MatterJS.BodyType, Peg> = new Map();
     private processedBalls: Set<Ball> = new Set();
 
+    // Star peg state
+    private starActivePegs: Map<Peg, number> = new Map(); // peg → expiry time
+    private nextStarPegTime = 0;
+
+    // UI
     private hud!: HudPanel;
     private shop!: ShopPanel;
     private statsWindow!: StatisticsWindow;
     private achievementsWindow!: AchievementsWindow;
     private apShopWindow!: APShopWindow;
     private dailyBonusWindow!: DailyBonusWindow;
+    private prestigeWindow!: PrestigeWindow;
 
+    // Timing & throttling
     private nextAutoDrop = 0;
     private nextManualDrop = 0;
-    private lastSaveTime = 0;
-    private totalPegBonusCount = 0;
+    private nextAchievementCheck = 0;
+    private frameCount = 0;
     private sessionMoneyStart = 0;
+
+    // Stat tracking
+    private totalPegBonusCount = 0;
+    private critCount = 0;
+    private starHitCount = 0;
+
+    // Input
     private spaceKey?: Phaser.Input.Keyboard.Key;
-    private saveInterval = 5000;
 
     constructor() {
         super({ key: "GameScene" });
@@ -85,8 +106,8 @@ export class GameScene extends Phaser.Scene {
 
         this.ballManager = new BallManager(this);
         this.ballManager.setMaxBalls(this.ballCapacity.getCapacity());
-
         this.refreshComboUpgrades();
+        this.refreshCritUpgrades();
 
         this.hud = new HudPanel(
             this,
@@ -94,7 +115,8 @@ export class GameScene extends Phaser.Scene {
             () => this.showStats(),
             () => this.showAchievements(),
             () => this.showAPShop(),
-            () => this.showDailyBonus()
+            () => this.showDailyBonus(),
+            () => this.showPrestige()
         );
 
         this.shop = new ShopPanel(
@@ -111,6 +133,7 @@ export class GameScene extends Phaser.Scene {
         this.achievementsWindow = new AchievementsWindow(this);
         this.apShopWindow = new APShopWindow(this, this.apShop, (id) => this.buyAP(id));
         this.dailyBonusWindow = new DailyBonusWindow(this, () => this.claimDailyBonus());
+        this.prestigeWindow = new PrestigeWindow(this, this.prestige, () => this.doPrestige());
 
         this.refreshSlotLabels();
 
@@ -129,40 +152,63 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.sessionMoneyStart = this.economy.getMoney();
+        this.nextStarPegTime = this.time.now + 8000;
 
         if (this.dailyBonus.canClaim()) {
-            this.time.delayedCall(800, () => this.showDailyBonus());
+            this.time.delayedCall(900, () => this.showDailyBonus());
         }
     }
 
-    update(time: number, delta: number): void {
+    update(time: number, _delta: number): void {
+        this.frameCount++;
+
         if (this.spaceKey && Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
             this.tryDropBall(time);
         }
 
+        // Always update physics
         this.ballManager.update();
         this.checkBallsBottom(time);
         this.processAutoDropper(time);
+
+        // Throttled UI updates for performance
         this.combo.update(time);
         this.economy.updateRate(time);
-        this.updateHUD(time);
-        this.updateShop();
-        this.updateAchievements(time);
+
+        if (this.frameCount % 3 === 0) this.updateHUD(time);
+        if (this.frameCount % 6 === 0) this.updateShop();
+
+        // Time-based updates
+        if (time > this.nextAchievementCheck) {
+            this.updateAchievements(time);
+            this.nextAchievementCheck = time + 1500;
+        }
+
+        // Star peg system
+        this.updateStarPegs(time);
+
+        // Stuck ball cleanup every ~2s
+        if (this.frameCount % 120 === 0) {
+            this.checkStuckBalls(time);
+        }
     }
+
+    // ─── Background & Board ─────────────────────────────────
 
     private drawBackground(): void {
         const { x, y, width, height } = GAME_AREA;
+
         this.add.rectangle(0, 360, 262, 724, 0x0d1520).setOrigin(0, 0.5).setDepth(0);
-        this.add.rectangle(x + width / 2, y + height / 2, width, height, 0x0b1219)
+        this.add.rectangle(x + width / 2, y + height / 2, width, height, 0x0a1018)
             .setStrokeStyle(1, 0x1a2a3a).setDepth(0);
         this.add.rectangle(1280 - 170, 360, 340, 724, 0x0d1520).setOrigin(0.5).setDepth(0);
 
-        for (let i = 0; i < 35; i++) {
+        for (let i = 0; i < 40; i++) {
             this.add.circle(
                 Phaser.Math.Between(x + 5, x + width - 5),
                 Phaser.Math.Between(y + 5, y + height - SLOT_HEIGHT - 5),
                 Phaser.Math.Between(1, 2),
-                0xffffff, 0.06
+                0xffffff, 0.05
             ).setDepth(1);
         }
     }
@@ -178,7 +224,7 @@ export class GameScene extends Phaser.Scene {
             const dx = x + slotW * i;
             const dy = y + height - SLOT_HEIGHT / 2;
             this.matter.add.rectangle(dx, dy, 8, SLOT_HEIGHT, { isStatic: true, label: "divider" });
-            this.add.rectangle(dx, dy, 3, SLOT_HEIGHT, 0x445566, 0.8).setDepth(6);
+            this.add.rectangle(dx, dy, 3, SLOT_HEIGHT, 0x334455, 0.9).setDepth(6);
         }
 
         this.add.rectangle(x - 1, y + height / 2, 2, height, 0x445566, 0.8).setDepth(6);
@@ -194,7 +240,9 @@ export class GameScene extends Phaser.Scene {
             for (let col = 0; col < count; col++) {
                 const px = cx - ((count - 1) * PEG_SPACING_X) / 2 + col * PEG_SPACING_X;
                 const py = startY + row * PEG_SPACING_Y;
-                new Peg(this, px, py);
+                const peg = new Peg(this, px, py);
+                this.pegs.push(peg);
+                this.pegBodyMap.set(peg.body, peg);
             }
         }
     }
@@ -206,13 +254,7 @@ export class GameScene extends Phaser.Scene {
         const centerIdx = Math.floor(SLOT_VALUES.length / 2);
 
         for (let i = 0; i < SLOT_VALUES.length; i++) {
-            const slot = new Slot(
-                this,
-                x + slotW * i, slotY,
-                slotW, SLOT_HEIGHT,
-                SLOT_VALUES[i],
-                i === centerIdx
-            );
+            const slot = new Slot(this, x + slotW * i, slotY, slotW, SLOT_HEIGHT, SLOT_VALUES[i], i === centerIdx);
             this.slots.push(slot);
         }
     }
@@ -220,7 +262,8 @@ export class GameScene extends Phaser.Scene {
     private refreshSlotLabels(): void {
         const mult = this.multiplier.getMultiplier();
         const apBoost = this.apShop.getIncomeBoostMult();
-        for (const slot of this.slots) slot.updateLabel(mult, apBoost);
+        const prestigeMult = this.prestige.getGlobalIncomeMult();
+        for (const slot of this.slots) slot.updateLabel(mult, apBoost * prestigeMult);
     }
 
     private refreshComboUpgrades(): void {
@@ -230,6 +273,15 @@ export class GameScene extends Phaser.Scene {
         );
     }
 
+    private refreshCritUpgrades(): void {
+        this.crit.setAPUpgrades(
+            this.apShop.getCritChancePct(),
+            this.apShop.getCritPowerBonus()
+        );
+    }
+
+    // ─── Collision ──────────────────────────────────────────
+
     private handleCollision(bodyA: any, bodyB: any): void {
         let ballBody: any = null;
         let otherBody: any = null;
@@ -238,33 +290,53 @@ export class GameScene extends Phaser.Scene {
             ballBody = bodyA; otherBody = bodyB;
         } else if (bodyB.label === "ball" && bodyA.label === "peg") {
             ballBody = bodyB; otherBody = bodyA;
+        } else {
+            return;
         }
-
-        if (!ballBody) return;
 
         const ball = this.ballManager.getBalls().find(b => b.body === ballBody);
         if (!ball || this.processedBalls.has(ball)) return;
 
-        const pegX = otherBody.position.x;
-        const pegY = otherBody.position.y;
+        const peg = this.pegBodyMap.get(otherBody);
+        if (!peg) return;
 
+        peg.flash();
+
+        // Star peg bonus
+        if (peg.isStarPeg()) {
+            const avgSlot = SLOT_VALUES.reduce((s, v) => s + v, 0) / SLOT_VALUES.length;
+            const starBonus = Math.floor(
+                avgSlot * this.multiplier.getMultiplier() * this.apShop.getIncomeBoostMult()
+                * this.prestige.getGlobalIncomeMult() * 12
+            );
+            this.economy.addMoney(starBonus);
+            this.statistics.addMoney(starBonus);
+            this.starHitCount++;
+            FloatingText.create(this, peg.x, peg.y - 18, `⭐ +${fmt(starBonus)}`, "#ffd700", 22);
+            peg.setStar(false);
+            this.starActivePegs.delete(peg);
+        }
+
+        // Lucky peg bonus
         const chancePct = this.luckyPeg.getChancePct();
-        if (chancePct > 0 && Phaser.Math.Between(1, 100) <= chancePct) {
-            const baseIncome = (this.slots.reduce((s, sl) => s + sl.value, 0) / this.slots.length)
-                * this.multiplier.getMultiplier()
-                * this.apShop.getIncomeBoostMult()
-                * this.luckyPeg.getPower();
-            const income = Math.floor(baseIncome);
-            if (income > 0) {
-                this.economy.addMoney(income);
-                this.statistics.addMoney(income);
-                this.statistics.addPegBonus(income);
+        if (chancePct > 0 && Phaser.Math.Between(1, 10000) <= chancePct * 100) {
+            const avgSlot = SLOT_VALUES.reduce((s, v) => s + v, 0) / SLOT_VALUES.length;
+            const bonus = Math.floor(
+                avgSlot * this.multiplier.getMultiplier() * this.apShop.getIncomeBoostMult()
+                * this.prestige.getGlobalIncomeMult() * this.luckyPeg.getPower()
+            );
+            if (bonus > 0) {
+                this.economy.addMoney(bonus);
+                this.statistics.addMoney(bonus);
+                this.statistics.addPegBonus(bonus);
                 this.totalPegBonusCount++;
-                LuckyEffect.create(this, pegX, pegY);
-                FloatingText.create(this, pegX, pegY - 15, `+${fmt(income)}`, "#44ff99", 16);
+                LuckyEffect.create(this, peg.x, peg.y);
+                FloatingText.create(this, peg.x, peg.y - 14, `+${fmt(bonus)}`, "#44ff99", 15);
             }
         }
     }
+
+    // ─── Ball Logic ─────────────────────────────────────────
 
     private checkBallsBottom(time: number): void {
         const threshold = GAME_AREA.y + GAME_AREA.height - SLOT_HEIGHT - 2;
@@ -278,6 +350,7 @@ export class GameScene extends Phaser.Scene {
                 } else {
                     this.processedBalls.add(ball);
                     ball.destroy(this);
+                    this.scheduleProcessedCleanup(ball);
                 }
             }
         }
@@ -287,14 +360,16 @@ export class GameScene extends Phaser.Scene {
         this.processedBalls.add(ball);
 
         const { combo, multiplier: comboMult } = this.combo.onSlotHit(time);
+        const { isCrit, power: critPower } = this.crit.roll();
 
         const baseVal = slot.value * this.multiplier.getMultiplier();
         const apBoost = this.apShop.getIncomeBoostMult();
+        const prestageMult = this.prestige.getGlobalIncomeMult();
         const goldenBonus = ball.isGolden()
             ? this.goldenBall.getRewardMultiplier() * this.apShop.getGoldenRewardBonus()
             : 1;
 
-        const income = Math.floor(baseVal * apBoost * comboMult * goldenBonus);
+        const income = Math.floor(baseVal * apBoost * comboMult * goldenBonus * critPower * prestageMult);
 
         this.economy.addMoney(income);
         this.statistics.addMoney(income);
@@ -302,23 +377,38 @@ export class GameScene extends Phaser.Scene {
         this.statistics.trackHit(income);
         this.statistics.trackCombo(combo);
 
+        if (isCrit) {
+            this.critCount++;
+            this.statistics.trackCombo(combo);
+        }
+
         const bx = ball.getX();
         const by = GAME_AREA.y + GAME_AREA.height - SLOT_HEIGHT / 2;
 
-        if (ball.isGolden()) {
+        if (isCrit) {
+            FloatingText.create(this, bx, by - 35, `CRIT!`, "#ff4444", 20);
+            FloatingText.create(this, bx, by - 15, `+${fmt(income)}`, "#ff8888", 28);
+        } else if (ball.isGolden()) {
             GoldenBurst.create(this, bx, by);
             FloatingText.create(this, bx, by - 20, `+${fmt(income)}`, "#ffd700", 26);
         } else {
-            FloatingText.create(this, bx, by - 15, `+${fmt(income)}`, "#88ddff", 20);
+            FloatingText.create(this, bx, by - 14, `+${fmt(income)}`, "#88ddff", 20);
         }
 
         slot.flash(this);
 
-        ball.destroy(this);
+        // Multi-ball: chance to spawn extra ball for free
+        const multiBallChance = this.apShop.getMultiBallChancePct();
+        if (multiBallChance > 0 && Math.random() * 100 < multiBallChance) {
+            this.time.delayedCall(80, () => this.spawnBall(true));
+        }
 
-        this.time.delayedCall(10, () => {
-            this.processedBalls.delete(ball);
-        });
+        ball.destroy(this);
+        this.scheduleProcessedCleanup(ball);
+    }
+
+    private scheduleProcessedCleanup(ball: Ball): void {
+        this.time.delayedCall(50, () => this.processedBalls.delete(ball));
     }
 
     private tryDropBall(time: number): void {
@@ -344,7 +434,7 @@ export class GameScene extends Phaser.Scene {
         const rate = this.autoDropper.getBallsPerSecond();
         if (rate <= 0) return;
 
-        const autoBoost = 1 + this.speed.getAutoBoostPct() / 100;
+        const autoBoost = (1 + this.speed.getAutoBoostPct() / 100) * (1 + this.prestige.getAutoDropBoostPct() / 100);
         const effectiveRate = rate * autoBoost;
         const intervalMs = 1000 / effectiveRate;
 
@@ -362,13 +452,15 @@ export class GameScene extends Phaser.Scene {
         return Math.max(0.01, EconomyConfig.BALL_BASE_COST * this.apShop.getBallCostMult());
     }
 
-    private spawnBall(): void {
+    private spawnBall(free = false): void {
         const cx = GAME_AREA.x + GAME_AREA.width / 2;
-        const spawnX = cx + Phaser.Math.Between(-18, 18);
-        const spawnY = GAME_AREA.y + 25;
+        // Distribute across 35% of board width from center for varied ball paths
+        const spread = Math.floor(GAME_AREA.width * 0.35);
+        const spawnX = cx + Phaser.Math.Between(-spread, spread);
+        const spawnY = GAME_AREA.y + Phaser.Math.Between(18, 32);
 
-        const roll = Phaser.Math.Between(1, 100);
-        const type = roll <= this.goldenBall.getChancePct() ? BallType.Golden : BallType.Normal;
+        const baseGoldenChance = this.goldenBall.getChancePct() + this.prestige.getBaseGoldenChancePct();
+        const type = Phaser.Math.Between(1, 100) <= baseGoldenChance ? BallType.Golden : BallType.Normal;
 
         const ball = this.ballManager.spawnBall(spawnX, spawnY, type);
         if (ball) {
@@ -376,6 +468,43 @@ export class GameScene extends Phaser.Scene {
             if (type === BallType.Golden) this.statistics.addGoldenBall();
         }
     }
+
+    private checkStuckBalls(time: number): void {
+        const TIMEOUT_MS = 20_000;
+        for (const ball of this.ballManager.getBalls()) {
+            if (this.processedBalls.has(ball)) continue;
+            if (time - ball.spawnTime > TIMEOUT_MS) {
+                this.processedBalls.add(ball);
+                ball.destroy(this);
+                this.scheduleProcessedCleanup(ball);
+            }
+        }
+    }
+
+    // ─── Star Peg System ────────────────────────────────────
+
+    private updateStarPegs(time: number): void {
+        // Expire old stars
+        for (const [peg, expiry] of this.starActivePegs) {
+            if (time > expiry) {
+                peg.setStar(false);
+                this.starActivePegs.delete(peg);
+            }
+        }
+
+        // Spawn new stars every 8s (max 3 active)
+        if (time > this.nextStarPegTime && this.starActivePegs.size < 3) {
+            const available = this.pegs.filter(p => !p.isStarPeg());
+            if (available.length > 0) {
+                const peg = available[Phaser.Math.Between(0, available.length - 1)];
+                peg.setStar(true);
+                this.starActivePegs.set(peg, time + 14_000);
+            }
+            this.nextStarPegTime = time + 8000;
+        }
+    }
+
+    // ─── Shop & Upgrades ─────────────────────────────────────
 
     private buy(type: string): void {
         let cost = 0;
@@ -417,13 +546,61 @@ export class GameScene extends Phaser.Scene {
         this.apShop.buy(id);
         this.refreshSlotLabels();
         this.refreshComboUpgrades();
+        this.refreshCritUpgrades();
         this.apShopWindow.updateAP(this.ap.getAvailable(), this.apShop);
-        this.hud.showMessage(`Upgraded: ${id}!`);
+        this.hud.showMessage(`Upgraded: ${id}!`, "#aaaaff");
     }
+
+    // ─── Prestige ────────────────────────────────────────────
+
+    private doPrestige(): void {
+        if (!this.prestige.canPrestige(this.economy.getMoney())) {
+            this.hud.showMessage("Not enough money to prestige!");
+            return;
+        }
+
+        const pp = this.prestige.doPrestige(this.economy.getMoney());
+
+        // Apply retention to shop levels
+        const retPct = this.prestige.getShopRetentionPct() / 100;
+        const keep = (l: number) => Math.floor(l * retPct);
+
+        this.autoDropper.setLevel(keep(this.autoDropper.getLevel()));
+        this.multiplier.setLevel(keep(this.multiplier.getLevel()));
+        this.ballCapacity.setLevel(keep(this.ballCapacity.getLevel()));
+        this.goldenBall.setLevel(keep(this.goldenBall.getLevel()));
+        this.luckyPeg.setLevel(keep(this.luckyPeg.getLevel()));
+        this.speed.setLevel(keep(this.speed.getLevel()));
+
+        // Reset money
+        this.economy.setMoney(this.prestige.getStartingMoney());
+
+        // Reset auto dropper timing
+        this.nextAutoDrop = this.time.now + 1000;
+        this.nextManualDrop = 0;
+
+        // Clear balls
+        this.ballManager.destroyAll();
+        this.ballManager.setMaxBalls(this.ballCapacity.getCapacity());
+
+        // Clear star pegs
+        for (const [peg] of this.starActivePegs) peg.setStar(false);
+        this.starActivePegs.clear();
+        this.nextStarPegTime = this.time.now + 8000;
+
+        this.refreshSlotLabels();
+        this.saveGame();
+
+        this.hud.showMessage(`PRESTIGE! +${pp} PP earned!`, "#ff9944");
+        FloatingText.create(this, 640, 280, `✦ PRESTIGE! +${pp} PP ✦`, "#ff9944", 32);
+    }
+
+    // ─── Windows ─────────────────────────────────────────────
 
     private showStats(): void {
         const stats = this.statistics.getAll();
         const session = this.economy.getMoney() - this.sessionMoneyStart;
+        const autoBoost = (1 + this.speed.getAutoBoostPct() / 100) * (1 + this.prestige.getAutoDropBoostPct() / 100);
         this.statsWindow.show({
             lifetimeMoney: stats.totalMoneyEarned,
             lifetimeBalls: stats.totalBallsDropped,
@@ -438,10 +615,10 @@ export class GameScene extends Phaser.Scene {
             sessionSec: this.statistics.getSessionSec(),
             sessionRate: this.economy.getRate(),
             money: this.economy.getMoney(),
-            autoRate: this.autoDropper.getBallsPerSecond() * (1 + this.speed.getAutoBoostPct() / 100),
-            autoBoost: this.speed.getAutoBoostPct(),
+            autoRate: this.autoDropper.getBallsPerSecond() * autoBoost,
+            autoBoost: Math.round((autoBoost - 1) * 100),
             multiplier: this.multiplier.getMultiplier(),
-            incomeBoost: this.apShop.getIncomeBoostMult(),
+            incomeBoost: this.apShop.getIncomeBoostMult() * this.prestige.getGlobalIncomeMult(),
             dailyStreak: this.dailyBonus.getStreak(),
         });
     }
@@ -455,8 +632,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     private showDailyBonus(): void {
-        const preview = this.dailyBonus.getBonusPreview(Math.max(0, this.economy.getRate()));
+        const preview = this.dailyBonus.getBonusPreview(Math.max(1, this.economy.getRate()));
         this.dailyBonusWindow.show(this.dailyBonus, preview);
+    }
+
+    private showPrestige(): void {
+        this.prestigeWindow.show(this.economy.getMoney());
     }
 
     private claimDailyBonus(): void {
@@ -464,11 +645,13 @@ export class GameScene extends Phaser.Scene {
         const { amount, streak } = this.dailyBonus.claim();
         this.economy.addMoney(amount);
         this.statistics.addMoney(amount);
-        this.hud.showMessage(`Daily bonus: +${fmt(amount)}  🔥 Day ${streak}!`);
-        FloatingText.create(this, 640, 300, `+${fmt(amount)}`, "#f5c518", 30);
+        this.hud.showMessage(`Daily bonus: +${fmt(amount)}  🔥 Day ${streak}!`, "#f5c518");
+        FloatingText.create(this, 590, 300, `+${fmt(amount)}`, "#f5c518", 30);
     }
 
-    private updateHUD(time: number): void {
+    // ─── HUD & Shop Updates ──────────────────────────────────
+
+    private updateHUD(_time: number): void {
         const combo = this.combo.getCombo();
         const comboBonus = this.combo.getBonusPct();
         const maxCombo = 50 + this.apShop.getComboStackBonus();
@@ -480,15 +663,18 @@ export class GameScene extends Phaser.Scene {
             this.ballManager.getBallCount(),
             this.ballManager.getMaxBalls(),
             this.ap.getAvailable(),
+            this.prestige.getCount(),
+            this.prestige.getAvailablePP(),
             combo,
             comboBonus,
             comboFrac,
-            this.dailyBonus.canClaim()
+            this.dailyBonus.canClaim(),
+            this.prestige.canPrestige(this.economy.getMoney())
         );
     }
 
     private updateShop(): void {
-        const autoBoost = 1 + this.speed.getAutoBoostPct() / 100;
+        const autoBoost = (1 + this.speed.getAutoBoostPct() / 100) * (1 + this.prestige.getAutoDropBoostPct() / 100);
         this.shop.update({
             autoDropperLevel: this.autoDropper.getLevel(),
             autoDropperCost: this.autoDropper.getCost(),
@@ -500,7 +686,7 @@ export class GameScene extends Phaser.Scene {
             capacityVal: this.ballCapacity.getCapacity(),
             capacityCost: this.ballCapacity.getCost(),
             goldenLevel: this.goldenBall.getLevel(),
-            goldenChance: this.goldenBall.getChancePct(),
+            goldenChance: this.goldenBall.getChancePct() + this.prestige.getBaseGoldenChancePct(),
             goldenCost: this.goldenBall.getCost(),
             luckyPegLevel: this.luckyPeg.getLevel(),
             luckyPegChance: this.luckyPeg.getChancePct(),
@@ -508,28 +694,31 @@ export class GameScene extends Phaser.Scene {
             luckyPegCost: this.luckyPeg.getCost(),
             speedLevel: this.speed.getLevel(),
             speedInterval: this.speed.getDropIntervalMs(),
-            speedAutoBoost: this.speed.getAutoBoostPct(),
+            speedAutoBoost: Math.round((autoBoost - 1) * 100),
             speedCost: this.speed.getCost(),
             money: this.economy.getMoney(),
         });
     }
 
-    private updateAchievements(time: number): void {
-        if (time % 1000 > 100) return;
-
+    private updateAchievements(_time: number): void {
         this.achievements.update(
             this.statistics,
             this.autoDropper.getLevel(),
             this.combo.getCombo(),
             this.dailyBonus.getStreak(),
             this.totalPegBonusCount,
+            this.prestige.getCount(),
+            this.critCount,
+            this.starHitCount,
             (state, apAmount) => {
                 this.ap.addAP(apAmount);
-                this.hud.showMessage(`Achievement: ${state.def.title} Lv${state.currentMilestone}  +${apAmount} AP!`);
-                FloatingText.create(this, 400, 250, `+${apAmount} AP`, "#aa88ff", 24);
+                this.hud.showMessage(`Achievement: ${state.def.title} Lv${state.currentMilestone}  +${apAmount} AP!`, "#aa88ff");
+                FloatingText.create(this, 590, 250, `+${apAmount} AP`, "#aa88ff", 24);
             }
         );
     }
+
+    // ─── Save / Load ─────────────────────────────────────────
 
     private loadSave(): SaveData | null {
         const save = SaveManager.load();
@@ -557,7 +746,15 @@ export class GameScene extends Phaser.Scene {
         this.ap.setData(save.totalAP, save.spentAP);
         this.achievements.setProgress(save.achievementProgress);
         this.dailyBonus.setData(save.lastDailyDate, save.dailyStreak);
-        this.ballManager?.setMaxBalls(this.ballCapacity.getCapacity());
+        this.prestige.setData(
+            save.prestigeCount,
+            save.prestigeTotalPP,
+            save.prestigeSpentPP,
+            save.prestigeShopLevels
+        );
+        this.critCount = save.critCount;
+        this.starHitCount = save.starHitCount;
+        this.totalPegBonusCount = save.totalPegBonusCount;
 
         return save;
     }
@@ -589,6 +786,13 @@ export class GameScene extends Phaser.Scene {
             lastDailyDate: this.dailyBonus.getLastDate(),
             dailyStreak: this.dailyBonus.getStreak(),
             lastSaveTime: Date.now(),
+            prestigeCount: this.prestige.getCount(),
+            prestigeTotalPP: this.prestige.getTotalPP(),
+            prestigeSpentPP: this.prestige.getSpentPP(),
+            prestigeShopLevels: this.prestige.getLevels(),
+            critCount: this.critCount,
+            starHitCount: this.starHitCount,
+            totalPegBonusCount: this.totalPegBonusCount,
         });
     }
 
@@ -606,14 +810,18 @@ export class GameScene extends Phaser.Scene {
         if (offlineSec < 30) return;
 
         const cappedSec = Math.min(offlineSec, 8 * 3600);
-        const autoRate = this.autoDropper.getBallsPerSecond() * (1 + this.speed.getAutoBoostPct() / 100);
+        const autoBoost = (1 + this.speed.getAutoBoostPct() / 100) * (1 + this.prestige.getAutoDropBoostPct() / 100);
+        const autoRate = this.autoDropper.getBallsPerSecond() * autoBoost;
         if (autoRate <= 0) return;
 
         const avgSlot = SLOT_VALUES.reduce((a, b) => a + b, 0) / SLOT_VALUES.length;
-        const mult = this.multiplier.getMultiplier();
-        const apBoost = this.apShop.getIncomeBoostMult();
-
-        const income = Math.floor(autoRate * avgSlot * mult * apBoost * cappedSec * 0.6);
+        const income = Math.floor(
+            autoRate * avgSlot
+            * this.multiplier.getMultiplier()
+            * this.apShop.getIncomeBoostMult()
+            * this.prestige.getGlobalIncomeMult()
+            * cappedSec * 0.6
+        );
         if (income <= 0) return;
 
         this.economy.addMoney(income);
@@ -623,27 +831,19 @@ export class GameScene extends Phaser.Scene {
         const m = Math.floor((offlineSec % 3600) / 60);
         const s = offlineSec % 60;
 
-        const popup = this.add.text(640, 300, [
+        const popup = this.add.text(590, 310, [
             "WELCOME BACK",
-            "",
             `Away: ${h}h ${m}m ${s}s`,
-            "",
-            `Offline Earnings`,
-            `+${fmt(income)}`,
+            `Offline: +${fmt(income)}`,
         ].join("\n"), {
-            fontFamily: "'Courier New', monospace",
-            fontSize: "22px",
-            color: "#ffffff",
-            align: "center",
+            fontFamily: "'Courier New', monospace", fontSize: "20px",
+            color: "#ffffff", align: "center",
             backgroundColor: "#111a22",
-            padding: { left: 24, right: 24, top: 18, bottom: 18 },
+            padding: { left: 22, right: 22, top: 14, bottom: 14 },
         }).setOrigin(0.5).setDepth(600);
 
         this.tweens.add({
-            targets: popup,
-            alpha: 0,
-            delay: 4000,
-            duration: 1000,
+            targets: popup, alpha: 0, delay: 3500, duration: 800,
             onComplete: () => popup.destroy(),
         });
     }

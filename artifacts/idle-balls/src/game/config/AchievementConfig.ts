@@ -119,4 +119,40 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 100, ap: 1000 },
         ]
     },
+    {
+        id: "prestige",
+        title: "Transcendence",
+        description: "Prestige (reset for permanent power)",
+        milestones: [
+            { target: 1, ap: 20 },
+            { target: 3, ap: 80 },
+            { target: 7, ap: 300 },
+            { target: 15, ap: 1500 },
+            { target: 30, ap: 8000 },
+        ]
+    },
+    {
+        id: "critical_master",
+        title: "Critical Master",
+        description: "Land critical hits",
+        milestones: [
+            { target: 100, ap: 8 },
+            { target: 1_000, ap: 25 },
+            { target: 10_000, ap: 90 },
+            { target: 100_000, ap: 400 },
+            { target: 1_000_000, ap: 2000 },
+        ]
+    },
+    {
+        id: "star_hunter",
+        title: "Star Hunter",
+        description: "Hit star pegs",
+        milestones: [
+            { target: 25, ap: 8 },
+            { target: 250, ap: 25 },
+            { target: 2_500, ap: 90 },
+            { target: 25_000, ap: 400 },
+            { target: 250_000, ap: 2000 },
+        ]
+    },
 ];

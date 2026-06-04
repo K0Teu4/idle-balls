@@ -9,7 +9,6 @@ export interface AchievementState {
 
 export class AchievementManager {
     private states: AchievementState[];
-    private milestoneProgress: Record<string, number> = {};
 
     constructor() {
         this.states = ACHIEVEMENT_CONFIG.map(def => ({
@@ -20,7 +19,6 @@ export class AchievementManager {
     }
 
     setProgress(data: Record<string, number>): void {
-        this.milestoneProgress = { ...data };
         for (const state of this.states) {
             state.currentMilestone = data[state.def.id] ?? 0;
         }
@@ -40,6 +38,9 @@ export class AchievementManager {
         bestCombo: number,
         dailyStreak: number,
         totalPegBonuses: number,
+        prestigeCount: number,
+        critCount: number,
+        starHitCount: number,
         onUnlock: (state: AchievementState, ap: number) => void
     ): void {
         const all = stats.getAll();
@@ -55,6 +56,9 @@ export class AchievementManager {
                 case "combo_master": return Math.max(all.bestCombo, bestCombo);
                 case "peg_buster": return totalPegBonuses;
                 case "daily_devotion": return dailyStreak;
+                case "prestige": return prestigeCount;
+                case "critical_master": return critCount;
+                case "star_hunter": return starHitCount;
                 default: return 0;
             }
         };

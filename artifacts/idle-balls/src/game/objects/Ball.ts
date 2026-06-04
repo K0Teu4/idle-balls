@@ -7,10 +7,12 @@ export class Ball {
     graphics: Phaser.GameObjects.Arc;
     glowGraphics?: Phaser.GameObjects.Arc;
     destroyed = false;
+    spawnTime = 0;
     readonly type: BallType;
 
     constructor(scene: Phaser.Scene, x: number, y: number, type: BallType) {
         this.type = type;
+        this.spawnTime = scene.time.now;
         const isGolden = type === BallType.Golden;
         const radius = isGolden ? BALL_RADIUS + 2 : BALL_RADIUS;
 
@@ -19,18 +21,21 @@ export class Ball {
             friction: 0,
             frictionAir: BALL_FRICTION_AIR,
             label: "ball"
-        });
+        }) as MatterJS.BodyType;
 
-        const force = Phaser.Math.FloatBetween(-0.0015, 0.0015);
-        scene.matter.body.applyForce(this.body, this.body.position, { x: force, y: 0 });
+        const forceX = Phaser.Math.FloatBetween(-0.004, 0.004);
+        const forceY = 0.003;
+        scene.matter.body.applyForce(this.body, this.body.position, { x: forceX, y: forceY });
 
         if (isGolden) {
-            this.glowGraphics = scene.add.circle(x, y, radius + 5, 0xffd700, 0.25).setDepth(9);
+            this.glowGraphics = scene.add.circle(x, y, radius + 6, 0xffd700, 0.22).setDepth(9);
         }
 
-        this.graphics = scene.add.circle(x, y, radius, isGolden ? 0xffd700 : 0xf0c040).setDepth(10);
+        this.graphics = scene.add.circle(x, y, radius, isGolden ? 0xffd700 : 0xe8c840).setDepth(10);
         if (isGolden) {
             this.graphics.setStrokeStyle(2, 0xffffff, 0.9);
+        } else {
+            this.graphics.setStrokeStyle(1, 0xffffff, 0.25);
         }
     }
 

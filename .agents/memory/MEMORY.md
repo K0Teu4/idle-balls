@@ -1,0 +1,2 @@
+- [Phaser 4 gravity config](phaser4-quirks.md) — requires `{ x: 0, y: N }` not just `{ y: N }` (Vector2Like requires both axes)
+- [Idle Balls game architecture](idle-balls-arch.md) — slot hit detection via Y-threshold (not physics), processedBalls Set prevents double-counting

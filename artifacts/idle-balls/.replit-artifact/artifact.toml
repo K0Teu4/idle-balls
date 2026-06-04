@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Idle Balls"
+version = "1.0.0"
+id = "artifacts/idle-balls"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22341
+
+[services.development]
+run = "pnpm --filter @workspace/idle-balls run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/idle-balls", "run", "build" ]
+publicDir = "artifacts/idle-balls/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22341"
+BASE_PATH = "/"

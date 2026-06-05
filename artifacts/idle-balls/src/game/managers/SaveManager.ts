@@ -7,6 +7,8 @@ export interface SaveData {
     goldenBallLevel: number;
     luckyPegLevel: number;
     speedLevel: number;
+    doubleStrikeLevel: number;
+    insuranceLevel: number;
     apShopLevels: Record<string, number>;
     totalMoneyEarned: number;
     totalBallsDropped: number;
@@ -23,14 +25,13 @@ export interface SaveData {
     lastDailyDate: string | null;
     dailyStreak: number;
     lastSaveTime: number;
-    // Prestige
     prestigeCount: number;
     prestigeTotalPP: number;
     prestigeSpentPP: number;
     prestigeShopLevels: Record<string, number>;
-    // New tracked stats
     critCount: number;
     starHitCount: number;
+    doubleStrikeCount: number;
     totalPegBonusCount: number;
 }
 
@@ -60,6 +61,8 @@ export class SaveManager {
                 goldenBallLevel: parsed.goldenBallLevel ?? 0,
                 luckyPegLevel: parsed.luckyPegLevel ?? 0,
                 speedLevel: parsed.speedLevel ?? 0,
+                doubleStrikeLevel: parsed.doubleStrikeLevel ?? 0,
+                insuranceLevel: parsed.insuranceLevel ?? 0,
                 apShopLevels: parsed.apShopLevels ?? {},
                 totalMoneyEarned: parsed.totalMoneyEarned ?? 0,
                 totalBallsDropped: parsed.totalBallsDropped ?? 0,
@@ -82,6 +85,7 @@ export class SaveManager {
                 prestigeShopLevels: parsed.prestigeShopLevels ?? {},
                 critCount: parsed.critCount ?? 0,
                 starHitCount: parsed.starHitCount ?? 0,
+                doubleStrikeCount: parsed.doubleStrikeCount ?? 0,
                 totalPegBonusCount: parsed.totalPegBonusCount ?? 0,
             };
         } catch {

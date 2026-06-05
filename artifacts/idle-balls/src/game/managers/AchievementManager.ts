@@ -41,25 +41,27 @@ export class AchievementManager {
         prestigeCount: number,
         critCount: number,
         starHitCount: number,
+        doubleStrikeCount: number,
         onUnlock: (state: AchievementState, ap: number) => void
     ): void {
         const all = stats.getAll();
 
         const getValue = (id: string): number => {
             switch (id) {
-                case "ball_dropper": return all.totalBallsDropped;
-                case "rich": return all.totalMoneyEarned;
-                case "gold_hunter": return all.totalGoldenBallsDropped;
-                case "shopaholic": return all.totalShopPurchases;
-                case "jackpot": return all.bestSingleHit;
-                case "automation": return autoDropperLevel;
-                case "combo_master": return Math.max(all.bestCombo, bestCombo);
-                case "peg_buster": return totalPegBonuses;
-                case "daily_devotion": return dailyStreak;
-                case "prestige": return prestigeCount;
+                case "ball_dropper":    return all.totalBallsDropped;
+                case "rich":            return all.totalMoneyEarned;
+                case "gold_hunter":     return all.totalGoldenBallsDropped;
+                case "shopaholic":      return all.totalShopPurchases;
+                case "jackpot":         return all.bestSingleHit;
+                case "automation":      return autoDropperLevel;
+                case "combo_master":    return Math.max(all.bestCombo, bestCombo);
+                case "peg_buster":      return totalPegBonuses;
+                case "daily_devotion":  return dailyStreak;
+                case "prestige":        return prestigeCount;
                 case "critical_master": return critCount;
-                case "star_hunter": return starHitCount;
-                default: return 0;
+                case "star_hunter":     return starHitCount;
+                case "double_striker":  return doubleStrikeCount;
+                default:                return 0;
             }
         };
 

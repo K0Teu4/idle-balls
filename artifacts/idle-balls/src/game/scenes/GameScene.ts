@@ -27,7 +27,10 @@ import { APShopManager } from "../managers/APShopManager";
 import { DailyBonusManager } from "../managers/DailyBonusManager";
 import { PrestigeManager } from "../managers/PrestigeManager";
 import { CritManager } from "../managers/CritManager";
+import { DoubleStrikeManager } from "../managers/DoubleStrikeManager";
+import { InsuranceManager } from "../managers/InsuranceManager";
 import { SaveManager, SaveData } from "../managers/SaveManager";
+import { SettingsManager } from "../managers/SettingsManager";
 
 import { HudPanel } from "../ui/HudPanel";
 import { ShopPanel } from "../ui/ShopPanel";
@@ -36,6 +39,8 @@ import { AchievementsWindow } from "../ui/AchievementsWindow";
 import { APShopWindow } from "../ui/APShopWindow";
 import { DailyBonusWindow } from "../ui/DailyBonusWindow";
 import { PrestigeWindow } from "../ui/PrestigeWindow";
+import { SettingsWindow } from "../ui/SettingsWindow";
+import { applyTheme } from "../ui/UIColors";
 
 import { fmt } from "../utils/NumberFormat";
 
@@ -57,6 +62,8 @@ export class GameScene extends Phaser.Scene {
     private dailyBonus = new DailyBonusManager();
     private prestige = new PrestigeManager();
     private crit = new CritManager();
+    private doubleStrike = new DoubleStrikeManager();
+    private insurance = new InsuranceManager();
 
     // Game objects
     private slots: Slot[] = [];
@@ -76,6 +83,8 @@ export class GameScene extends Phaser.Scene {
     private apShopWindow!: APShopWindow;
     private dailyBonusWindow!: DailyBonusWindow;
     private prestigeWindow!: PrestigeWindow;
+    private settingsWindow!: SettingsWindow;
+    private fpsText?: Phaser.GameObjects.Text;
 
     // Timing & throttling
     private nextAutoDrop = 0;
@@ -88,6 +97,8 @@ export class GameScene extends Phaser.Scene {
     private totalPegBonusCount = 0;
     private critCount = 0;
     private starHitCount = 0;
+    private doubleStrikeCount = 0;
+    private showFloating = true;
 
     // Input
     private spaceKey?: Phaser.Input.Keyboard.Key;
@@ -97,6 +108,13 @@ export class GameScene extends Phaser.Scene {
     }
 
     create(): void {
+        applyTheme();
+        this.showFloating = SettingsManager.showFloatingText();
+        if (SettingsManager.showFPS()) {
+            this.fpsText = this.add.text(268, 4, "", {
+                fontFamily: "'Courier New', monospace", fontSize: "11px", color: "#aaffaa",
+            }).setDepth(200);
+        }
         this.drawBackground();
         this.createWalls();
         this.createPegs();
@@ -116,7 +134,8 @@ export class GameScene extends Phaser.Scene {
             () => this.showAchievements(),
             () => this.showAPShop(),
             () => this.showDailyBonus(),
-            () => this.showPrestige()
+            () => this.showPrestige(),
+            () => this.showSettings()
         );
 
         this.shop = new ShopPanel(
@@ -126,7 +145,9 @@ export class GameScene extends Phaser.Scene {
             () => this.buy("ballCapacity"),
             () => this.buy("goldenBall"),
             () => this.buy("luckyPeg"),
-            () => this.buy("speed")
+            () => this.buy("speed"),
+            () => this.buy("doubleStrike"),
+            () => this.buy("insurance")
         );
 
         this.statsWindow = new StatisticsWindow(this);
@@ -134,6 +155,7 @@ export class GameScene extends Phaser.Scene {
         this.apShopWindow = new APShopWindow(this, this.apShop, (id) => this.buyAP(id));
         this.dailyBonusWindow = new DailyBonusWindow(this, () => this.claimDailyBonus());
         this.prestigeWindow = new PrestigeWindow(this, this.prestige, () => this.doPrestige());
+        this.settingsWindow = new SettingsWindow(this, (key, val) => this.onSettingChanged(key, val));
 
         this.refreshSlotLabels();
 
@@ -170,6 +192,11 @@ export class GameScene extends Phaser.Scene {
         this.ballManager.update();
         this.checkBallsBottom(time);
         this.processAutoDropper(time);
+
+        // FPS counter
+        if (this.fpsText) {
+            this.fpsText.setText(`FPS: ${Math.round(this.game.loop.actualFps)}`);
+        }
 
         // Throttled UI updates for performance
         this.combo.update(time);
@@ -364,12 +391,17 @@ export class GameScene extends Phaser.Scene {
 
         const baseVal = slot.value * this.multiplier.getMultiplier();
         const apBoost = this.apShop.getIncomeBoostMult();
-        const prestageMult = this.prestige.getGlobalIncomeMult();
+        const prestigeMult = this.prestige.getGlobalIncomeMult();
         const goldenBonus = ball.isGolden()
             ? this.goldenBall.getRewardMultiplier() * this.apShop.getGoldenRewardBonus()
             : 1;
 
-        const income = Math.floor(baseVal * apBoost * comboMult * goldenBonus * critPower * prestageMult);
+        // Double Strike: chance to double income
+        const isDouble = this.doubleStrike.roll();
+        if (isDouble) this.doubleStrikeCount++;
+
+        let income = Math.floor(baseVal * apBoost * comboMult * goldenBonus * critPower * prestigeMult);
+        if (isDouble) income *= 2;
 
         this.economy.addMoney(income);
         this.statistics.addMoney(income);
@@ -377,22 +409,37 @@ export class GameScene extends Phaser.Scene {
         this.statistics.trackHit(income);
         this.statistics.trackCombo(combo);
 
-        if (isCrit) {
-            this.critCount++;
-            this.statistics.trackCombo(combo);
-        }
+        if (isCrit) this.critCount++;
 
         const bx = ball.getX();
         const by = GAME_AREA.y + GAME_AREA.height - SLOT_HEIGHT / 2;
 
-        if (isCrit) {
-            FloatingText.create(this, bx, by - 35, `CRIT!`, "#ff4444", 20);
-            FloatingText.create(this, bx, by - 15, `+${fmt(income)}`, "#ff8888", 28);
+        if (this.showFloating) {
+            if (isCrit) {
+                FloatingText.create(this, bx, by - 35, `CRIT!`, "#ff4444", 20);
+                FloatingText.create(this, bx, by - 15, `+${fmt(income)}`, "#ff8888", 28);
+            } else if (isDouble) {
+                FloatingText.create(this, bx, by - 35, `×2 STRIKE!`, "#ff6688", 18);
+                FloatingText.create(this, bx, by - 15, `+${fmt(income)}`, "#ff99aa", 24);
+            } else if (ball.isGolden()) {
+                GoldenBurst.create(this, bx, by);
+                FloatingText.create(this, bx, by - 20, `+${fmt(income)}`, "#ffd700", 26);
+            } else {
+                FloatingText.create(this, bx, by - 14, `+${fmt(income)}`, "#88ddff", 20);
+            }
         } else if (ball.isGolden()) {
             GoldenBurst.create(this, bx, by);
-            FloatingText.create(this, bx, by - 20, `+${fmt(income)}`, "#ffd700", 26);
-        } else {
-            FloatingText.create(this, bx, by - 14, `+${fmt(income)}`, "#88ddff", 20);
+        }
+
+        // Insurance: refund on low-value slots (×1 or ×2)
+        if (slot.value <= 2 && this.insurance.getLevel() > 0) {
+            const refund = this.insurance.getRefundAmount(this.getBallCost());
+            if (refund > 0) {
+                this.economy.addMoney(refund);
+                if (this.showFloating) {
+                    FloatingText.create(this, bx, by - 55, `+${fmt(refund)} insur.`, "#44ccaa", 14);
+                }
+            }
         }
 
         slot.flash(this);
@@ -509,12 +556,14 @@ export class GameScene extends Phaser.Scene {
     private buy(type: string): void {
         let cost = 0;
         switch (type) {
-            case "autoDropper": cost = this.autoDropper.getCost(); break;
-            case "multiplier": cost = this.multiplier.getCost(); break;
-            case "ballCapacity": cost = this.ballCapacity.getCost(); break;
-            case "goldenBall": cost = this.goldenBall.getCost(); break;
-            case "luckyPeg": cost = this.luckyPeg.getCost(); break;
-            case "speed": cost = this.speed.getCost(); break;
+            case "autoDropper":   cost = this.autoDropper.getCost(); break;
+            case "multiplier":    cost = this.multiplier.getCost(); break;
+            case "ballCapacity":  cost = this.ballCapacity.getCost(); break;
+            case "goldenBall":    cost = this.goldenBall.getCost(); break;
+            case "luckyPeg":      cost = this.luckyPeg.getCost(); break;
+            case "speed":         cost = this.speed.getCost(); break;
+            case "doubleStrike":  cost = this.doubleStrike.getCost(); break;
+            case "insurance":     cost = this.insurance.getCost(); break;
         }
 
         if (!this.economy.spendMoney(cost)) {
@@ -529,9 +578,11 @@ export class GameScene extends Phaser.Scene {
                 this.ballCapacity.buy();
                 this.ballManager.setMaxBalls(this.ballCapacity.getCapacity());
                 break;
-            case "goldenBall": this.goldenBall.buy(); break;
-            case "luckyPeg": this.luckyPeg.buy(); break;
-            case "speed": this.speed.buy(); break;
+            case "goldenBall":   this.goldenBall.buy(); break;
+            case "luckyPeg":     this.luckyPeg.buy(); break;
+            case "speed":        this.speed.buy(); break;
+            case "doubleStrike": this.doubleStrike.buy(); break;
+            case "insurance":    this.insurance.buy(); break;
         }
 
         this.statistics.addPurchase();
@@ -571,6 +622,8 @@ export class GameScene extends Phaser.Scene {
         this.goldenBall.setLevel(keep(this.goldenBall.getLevel()));
         this.luckyPeg.setLevel(keep(this.luckyPeg.getLevel()));
         this.speed.setLevel(keep(this.speed.getLevel()));
+        this.doubleStrike.setLevel(keep(this.doubleStrike.getLevel()));
+        this.insurance.setLevel(keep(this.insurance.getLevel()));
 
         // Reset money
         this.economy.setMoney(this.prestige.getStartingMoney());
@@ -620,7 +673,34 @@ export class GameScene extends Phaser.Scene {
             multiplier: this.multiplier.getMultiplier(),
             incomeBoost: this.apShop.getIncomeBoostMult() * this.prestige.getGlobalIncomeMult(),
             dailyStreak: this.dailyBonus.getStreak(),
+            prestigeCount: this.prestige.getCount(),
+            prestigePP: this.prestige.getAvailablePP(),
+            critCount: this.critCount,
+            starHitCount: this.starHitCount,
+            doubleStrikeCount: this.doubleStrikeCount,
         });
+    }
+
+    private showSettings(): void {
+        this.settingsWindow.show();
+    }
+
+    private onSettingChanged(key: string, val: unknown): void {
+        if (key === "showFloatingText") {
+            this.showFloating = val as boolean;
+        }
+        if (key === "showFPS") {
+            if (val) {
+                if (!this.fpsText) {
+                    this.fpsText = this.add.text(268, 4, "", {
+                        fontFamily: "'Courier New', monospace", fontSize: "11px", color: "#aaffaa",
+                    }).setDepth(200);
+                }
+            } else {
+                this.fpsText?.destroy();
+                this.fpsText = undefined;
+            }
+        }
     }
 
     private showAchievements(): void {
@@ -696,6 +776,12 @@ export class GameScene extends Phaser.Scene {
             speedInterval: this.speed.getDropIntervalMs(),
             speedAutoBoost: Math.round((autoBoost - 1) * 100),
             speedCost: this.speed.getCost(),
+            dsLevel: this.doubleStrike.getLevel(),
+            dsChance: this.doubleStrike.getChancePct(),
+            dsCost: this.doubleStrike.getCost(),
+            insLevel: this.insurance.getLevel(),
+            insRefund: this.insurance.getRefundPct(),
+            insCost: this.insurance.getCost(),
             money: this.economy.getMoney(),
         });
     }
@@ -710,6 +796,7 @@ export class GameScene extends Phaser.Scene {
             this.prestige.getCount(),
             this.critCount,
             this.starHitCount,
+            this.doubleStrikeCount,
             (state, apAmount) => {
                 this.ap.addAP(apAmount);
                 this.hud.showMessage(`Achievement: ${state.def.title} Lv${state.currentMilestone}  +${apAmount} AP!`, "#aa88ff");
@@ -731,6 +818,8 @@ export class GameScene extends Phaser.Scene {
         this.goldenBall.setLevel(save.goldenBallLevel);
         this.luckyPeg.setLevel(save.luckyPegLevel);
         this.speed.setLevel(save.speedLevel);
+        this.doubleStrike.setLevel(save.doubleStrikeLevel);
+        this.insurance.setLevel(save.insuranceLevel);
         this.apShop.setLevels(save.apShopLevels);
         this.statistics.setData({
             totalMoneyEarned: save.totalMoneyEarned,
@@ -754,6 +843,7 @@ export class GameScene extends Phaser.Scene {
         );
         this.critCount = save.critCount;
         this.starHitCount = save.starHitCount;
+        this.doubleStrikeCount = save.doubleStrikeCount;
         this.totalPegBonusCount = save.totalPegBonusCount;
 
         return save;
@@ -770,6 +860,8 @@ export class GameScene extends Phaser.Scene {
             goldenBallLevel: this.goldenBall.getLevel(),
             luckyPegLevel: this.luckyPeg.getLevel(),
             speedLevel: this.speed.getLevel(),
+            doubleStrikeLevel: this.doubleStrike.getLevel(),
+            insuranceLevel: this.insurance.getLevel(),
             apShopLevels: this.apShop.getLevels(),
             totalMoneyEarned: stats.totalMoneyEarned,
             totalBallsDropped: stats.totalBallsDropped,
@@ -792,13 +884,15 @@ export class GameScene extends Phaser.Scene {
             prestigeShopLevels: this.prestige.getLevels(),
             critCount: this.critCount,
             starHitCount: this.starHitCount,
+            doubleStrikeCount: this.doubleStrikeCount,
             totalPegBonusCount: this.totalPegBonusCount,
         });
     }
 
     private startAutosave(): void {
+        const intervalMs = SettingsManager.getAutosaveSec() * 1000;
         this.time.addEvent({
-            delay: 5000,
+            delay: intervalMs,
             loop: true,
             callback: () => this.saveGame(),
         });

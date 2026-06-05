@@ -20,8 +20,13 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 1_000, ap: 15 },
             { target: 10_000, ap: 50 },
             { target: 100_000, ap: 200 },
-            { target: 1_000_000, ap: 1000 },
-        ]
+            { target: 1_000_000, ap: 800 },
+            { target: 10_000_000, ap: 3_500 },
+            { target: 100_000_000, ap: 15_000 },
+            { target: 1_000_000_000, ap: 70_000 },
+            { target: 10_000_000_000, ap: 300_000 },
+            { target: 100_000_000_000, ap: 1_500_000 },
+        ],
     },
     {
         id: "rich",
@@ -32,8 +37,13 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 100_000, ap: 30 },
             { target: 10_000_000, ap: 100 },
             { target: 1_000_000_000, ap: 400 },
-            { target: 1_000_000_000_000, ap: 2000 },
-        ]
+            { target: 100_000_000_000, ap: 1_800 },
+            { target: 10_000_000_000_000, ap: 8_000 },
+            { target: 1e15, ap: 40_000 },
+            { target: 1e18, ap: 200_000 },
+            { target: 1e21, ap: 1_000_000 },
+            { target: 1e24, ap: 5_000_000 },
+        ],
     },
     {
         id: "gold_hunter",
@@ -43,9 +53,12 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 10, ap: 10 },
             { target: 100, ap: 30 },
             { target: 1_000, ap: 100 },
-            { target: 10_000, ap: 500 },
-            { target: 100_000, ap: 2500 },
-        ]
+            { target: 10_000, ap: 400 },
+            { target: 100_000, ap: 2_000 },
+            { target: 1_000_000, ap: 10_000 },
+            { target: 10_000_000, ap: 50_000 },
+            { target: 100_000_000, ap: 250_000 },
+        ],
     },
     {
         id: "shopaholic",
@@ -56,8 +69,11 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 50, ap: 20 },
             { target: 250, ap: 75 },
             { target: 1_000, ap: 300 },
-            { target: 5_000, ap: 1500 },
-        ]
+            { target: 5_000, ap: 1_500 },
+            { target: 25_000, ap: 8_000 },
+            { target: 100_000, ap: 40_000 },
+            { target: 500_000, ap: 200_000 },
+        ],
     },
     {
         id: "jackpot",
@@ -68,8 +84,12 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 10_000, ap: 20 },
             { target: 1_000_000, ap: 75 },
             { target: 1_000_000_000, ap: 300 },
-            { target: 1_000_000_000_000, ap: 1500 },
-        ]
+            { target: 1_000_000_000_000, ap: 1_500 },
+            { target: 1e15, ap: 7_500 },
+            { target: 1e18, ap: 35_000 },
+            { target: 1e21, ap: 175_000 },
+            { target: 1e24, ap: 900_000 },
+        ],
     },
     {
         id: "automation",
@@ -80,8 +100,11 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 20, ap: 20 },
             { target: 50, ap: 60 },
             { target: 100, ap: 200 },
-            { target: 200, ap: 1000 },
-        ]
+            { target: 200, ap: 800 },
+            { target: 500, ap: 4_000 },
+            { target: 1_000, ap: 20_000 },
+            { target: 2_500, ap: 100_000 },
+        ],
     },
     {
         id: "combo_master",
@@ -92,8 +115,11 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 15, ap: 15 },
             { target: 30, ap: 50 },
             { target: 60, ap: 200 },
-            { target: 120, ap: 1000 },
-        ]
+            { target: 120, ap: 1_000 },
+            { target: 250, ap: 5_000 },
+            { target: 500, ap: 25_000 },
+            { target: 1_000, ap: 125_000 },
+        ],
     },
     {
         id: "peg_buster",
@@ -104,8 +130,11 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 500, ap: 20 },
             { target: 5_000, ap: 75 },
             { target: 50_000, ap: 300 },
-            { target: 500_000, ap: 1500 },
-        ]
+            { target: 500_000, ap: 1_500 },
+            { target: 5_000_000, ap: 8_000 },
+            { target: 50_000_000, ap: 40_000 },
+            { target: 500_000_000, ap: 200_000 },
+        ],
     },
     {
         id: "daily_devotion",
@@ -116,20 +145,26 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 7, ap: 30 },
             { target: 14, ap: 80 },
             { target: 30, ap: 200 },
-            { target: 100, ap: 1000 },
-        ]
+            { target: 60, ap: 600 },
+            { target: 100, ap: 1_500 },
+            { target: 200, ap: 6_000 },
+            { target: 365, ap: 25_000 },
+        ],
     },
     {
         id: "prestige",
         title: "Transcendence",
-        description: "Prestige (reset for permanent power)",
+        description: "Prestige for permanent power",
         milestones: [
             { target: 1, ap: 20 },
             { target: 3, ap: 80 },
             { target: 7, ap: 300 },
-            { target: 15, ap: 1500 },
-            { target: 30, ap: 8000 },
-        ]
+            { target: 15, ap: 1_500 },
+            { target: 30, ap: 8_000 },
+            { target: 50, ap: 40_000 },
+            { target: 75, ap: 200_000 },
+            { target: 100, ap: 1_000_000 },
+        ],
     },
     {
         id: "critical_master",
@@ -140,8 +175,11 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 1_000, ap: 25 },
             { target: 10_000, ap: 90 },
             { target: 100_000, ap: 400 },
-            { target: 1_000_000, ap: 2000 },
-        ]
+            { target: 1_000_000, ap: 2_000 },
+            { target: 10_000_000, ap: 10_000 },
+            { target: 100_000_000, ap: 50_000 },
+            { target: 1_000_000_000, ap: 250_000 },
+        ],
     },
     {
         id: "star_hunter",
@@ -152,7 +190,25 @@ export const ACHIEVEMENT_CONFIG: AchievementDef[] = [
             { target: 250, ap: 25 },
             { target: 2_500, ap: 90 },
             { target: 25_000, ap: 400 },
-            { target: 250_000, ap: 2000 },
-        ]
+            { target: 250_000, ap: 2_000 },
+            { target: 2_500_000, ap: 10_000 },
+            { target: 25_000_000, ap: 50_000 },
+            { target: 250_000_000, ap: 250_000 },
+        ],
+    },
+    {
+        id: "double_striker",
+        title: "Double Striker",
+        description: "Trigger Double Strike",
+        milestones: [
+            { target: 50, ap: 8 },
+            { target: 500, ap: 25 },
+            { target: 5_000, ap: 90 },
+            { target: 50_000, ap: 400 },
+            { target: 500_000, ap: 2_000 },
+            { target: 5_000_000, ap: 10_000 },
+            { target: 50_000_000, ap: 50_000 },
+            { target: 500_000_000, ap: 250_000 },
+        ],
     },
 ];

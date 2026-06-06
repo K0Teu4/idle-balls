@@ -13,7 +13,6 @@ export class APShopWindow {
     private buyBtnTexts: Phaser.GameObjects.Text[] = [];
     private visible = false;
     private apLabel!: Phaser.GameObjects.Text;
-    private apBar!: Phaser.GameObjects.Rectangle;
 
     constructor(
         scene: Phaser.Scene,
@@ -21,8 +20,8 @@ export class APShopWindow {
         onBuy: (id: string) => void
     ) {
         const d = 520;
-        const pw = 660;
-        const ph = 390;
+        const pw = 680;
+        const ph = 420;
         const px = 640;
         const py = 362;
         const panelLeft = px - pw / 2;
@@ -35,7 +34,7 @@ export class APShopWindow {
             .setDepth(d).setStrokeStyle(2, UIColors.apBg).setVisible(false);
 
         const title = scene.add.text(px, py - ph / 2 + 20, t("title_apshop"), {
-            fontFamily: "'Courier New', monospace", fontSize: "18px",
+            fontFamily: "'Courier New', monospace", fontSize: "17px",
             color: UIColors.apColor, fontStyle: "bold",
         }).setOrigin(0.5).setDepth(d + 1).setVisible(false);
 
@@ -44,27 +43,28 @@ export class APShopWindow {
         }).setOrigin(0.5).setDepth(d + 1).setVisible(false).setInteractive({ useHandCursor: true });
         closeX.on("pointerup", () => this.hide());
 
-        this.apLabel = scene.add.text(px, py - ph / 2 + 38, "", {
+        this.apLabel = scene.add.text(px, py - ph / 2 + 40, "", {
             fontFamily: "'Courier New', monospace", fontSize: "12px", color: UIColors.apColor,
         }).setOrigin(0.5).setDepth(d + 1).setVisible(false);
 
-        const sep = scene.add.rectangle(px, py - ph / 2 + 52, pw - 16, 1, UIColors.panelBorder)
+        const sep = scene.add.rectangle(px, py - ph / 2 + 54, pw - 16, 1, UIColors.panelBorder)
             .setDepth(d + 1).setVisible(false);
 
         this.group.push(overlay, panel, title, closeX, this.apLabel, sep);
 
         // ── 2-column grid layout ──────────────────────────────────────
-        const contentTop = py - ph / 2 + 60;
-        const iw = 302;
-        const itemH = 82;
+        const contentTop = py - ph / 2 + 62;
+        const iw = 316;
+        const itemH = 86;
         const gap = 4;
-        const col1 = panelLeft + 12;
+        const col1 = panelLeft + 10;
         const col2 = col1 + iw + 8;
 
         AP_UPGRADES.forEach((upg, i) => {
             const col = i % 2 === 0 ? col1 : col2;
             const row = Math.floor(i / 2);
             const ay = contentTop + row * (itemH + gap);
+            const tw = iw - 72; // text area width (leave room for buy button)
 
             const bg = scene.add.rectangle(col + iw / 2, ay + itemH / 2, iw, itemH, UIColors.panelAlt)
                 .setDepth(d + 1).setStrokeStyle(1, UIColors.panelBorder).setVisible(false);
@@ -73,38 +73,48 @@ export class APShopWindow {
             const nameT = scene.add.text(col + 6, ay + 5, upg.title, {
                 fontFamily: "'Courier New', monospace", fontSize: "12px",
                 color: UIColors.apColor, fontStyle: "bold",
+                wordWrap: { width: tw },
             }).setDepth(d + 2).setVisible(false);
             this.group.push(nameT);
 
             const descT = scene.add.text(col + 6, ay + 21, upg.description, {
-                fontFamily: "'Courier New', monospace", fontSize: "10px", color: UIColors.textDim,
+                fontFamily: "'Courier New', monospace", fontSize: "10px",
+                color: UIColors.textDim,
+                wordWrap: { width: tw },
             }).setDepth(d + 2).setVisible(false);
             this.group.push(descT);
 
-            const infoT = scene.add.text(col + 6, ay + 36, "", {
-                fontFamily: "'Courier New', monospace", fontSize: "11px", color: UIColors.rate,
+            const infoT = scene.add.text(col + 6, ay + 38, "", {
+                fontFamily: "'Courier New', monospace", fontSize: "11px",
+                color: UIColors.rate,
+                wordWrap: { width: tw },
             }).setDepth(d + 2).setVisible(false);
             this.infoTexts.push(infoT);
             this.group.push(infoT);
 
-            const nextT = scene.add.text(col + 6, ay + 50, "", {
-                fontFamily: "'Courier New', monospace", fontSize: "10px", color: UIColors.textDim,
+            const nextT = scene.add.text(col + 6, ay + 53, "", {
+                fontFamily: "'Courier New', monospace", fontSize: "10px",
+                color: UIColors.textDim,
+                wordWrap: { width: tw },
             }).setDepth(d + 2).setVisible(false);
             this.nextTexts.push(nextT);
             this.group.push(nextT);
 
-            const costT = scene.add.text(col + 6, ay + 64, "", {
-                fontFamily: "'Courier New', monospace", fontSize: "10px", color: UIColors.apColor,
+            const costT = scene.add.text(col + 6, ay + 68, "", {
+                fontFamily: "'Courier New', monospace", fontSize: "10px",
+                color: UIColors.apColor,
+                wordWrap: { width: tw },
             }).setDepth(d + 2).setVisible(false);
             this.costTexts.push(costT);
             this.group.push(costT);
 
-            const bx = col + iw - 36;
-            const buyBtn = scene.add.rectangle(bx, ay + itemH / 2, 60, 24, UIColors.buttonPurple)
+            const bx = col + iw - 32;
+            const buyBtn = scene.add.rectangle(bx, ay + itemH / 2, 56, 28, UIColors.buttonPurple)
                 .setDepth(d + 2).setStrokeStyle(1, 0x7744cc).setVisible(false)
                 .setInteractive({ useHandCursor: true });
             const buyBtnT = scene.add.text(bx, ay + itemH / 2, t("buy"), {
-                fontFamily: "'Courier New', monospace", fontSize: "11px", color: "#fff", fontStyle: "bold",
+                fontFamily: "'Courier New', monospace", fontSize: "11px",
+                color: "#fff", fontStyle: "bold",
             }).setOrigin(0.5).setDepth(d + 3).setVisible(false);
 
             buyBtn.on("pointerup", () => onBuy(upg.id));
@@ -115,8 +125,7 @@ export class APShopWindow {
             this.group.push(buyBtn, buyBtnT);
         });
 
-        // Hint footer
-        const hint = scene.add.text(px, py + ph / 2 - 14, "AP earned from Achievements  •  upgrades scale infinitely", {
+        const hint = scene.add.text(px, py + ph / 2 - 12, "AP earned from Achievements  •  upgrades scale infinitely", {
             fontFamily: "'Courier New', monospace", fontSize: "10px", color: UIColors.textDim,
         }).setOrigin(0.5).setDepth(d + 1).setVisible(false);
         this.group.push(hint);
@@ -145,6 +154,7 @@ export class APShopWindow {
             this.costTexts[i].setText(`Cost: ${cost} AP`);
             this.buyBtns[i].setFillStyle(can ? UIColors.buttonPurple : 0x2a2a2a);
             this.buyBtnTexts[i].setColor(can ? "#ffffff" : "#555555");
+            this.buyBtnTexts[i].setText(t("buy"));
         });
     }
 

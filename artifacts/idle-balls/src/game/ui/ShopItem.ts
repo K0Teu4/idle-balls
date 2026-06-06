@@ -1,10 +1,9 @@
 import Phaser from "phaser";
 import { UIColors } from "./UIColors";
-import { fmt } from "../utils/NumberFormat";
 
 export class ShopItem {
     static readonly W = 320;
-    static readonly H = 76;
+    static readonly H = 72;
 
     private bg: Phaser.GameObjects.Rectangle;
     private titleText: Phaser.GameObjects.Text;
@@ -30,34 +29,34 @@ export class ShopItem {
             .setDepth(depth)
             .setStrokeStyle(1, UIColors.panelBorder);
 
-        this.titleText = scene.add.text(x + 8, y + 5, title, {
+        this.titleText = scene.add.text(x + 8, y + 4, title, {
             fontFamily: "'Courier New', monospace",
-            fontSize: "13px",
+            fontSize: "12px",
             color,
             fontStyle: "bold",
         }).setDepth(depth + 1);
 
-        this.lvlBadge = scene.add.text(x + W - 8, y + 5, "", {
+        this.lvlBadge = scene.add.text(x + W - 8, y + 4, "", {
             fontFamily: "'Courier New', monospace",
             fontSize: "11px",
             color: UIColors.textDim,
         }).setOrigin(1, 0).setDepth(depth + 1);
 
-        this.infoText = scene.add.text(x + 8, y + 22, "", {
+        this.infoText = scene.add.text(x + 8, y + 20, "", {
             fontFamily: "'Courier New', monospace",
-            fontSize: "11px",
+            fontSize: "10px",
             color: UIColors.textDim,
-            lineSpacing: 1,
+            lineSpacing: 2,
         }).setDepth(depth + 1);
 
-        this.buyBtn = scene.add.rectangle(x + W - 40, y + H - 20, 68, 24, UIColors.button)
+        this.buyBtn = scene.add.rectangle(x + W - 40, y + H - 18, 68, 22, UIColors.button)
             .setDepth(depth + 1)
             .setStrokeStyle(1, 0x335577)
             .setInteractive({ useHandCursor: true });
 
-        this.buyBtnText = scene.add.text(x + W - 40, y + H - 20, "BUY", {
+        this.buyBtnText = scene.add.text(x + W - 40, y + H - 18, "BUY", {
             fontFamily: "'Courier New', monospace",
-            fontSize: "12px",
+            fontSize: "11px",
             color: "#ffffff",
             fontStyle: "bold",
         }).setOrigin(0.5).setDepth(depth + 2);
@@ -69,11 +68,12 @@ export class ShopItem {
         this.buyBtn.on("pointerup", () => { if (this.canAfford) onBuy(); });
     }
 
-    setInfo(lines: string[], afford = true, level?: number): void {
+    setInfo(lines: string[], afford = true, level?: number, buyLabel = "BUY"): void {
         this.infoText.setText(lines.join("\n"));
         this.canAfford = afford;
         this.buyBtn.setFillStyle(afford ? UIColors.button : 0x2a2a2a);
         this.buyBtnText.setColor(afford ? "#ffffff" : "#555555");
+        this.buyBtnText.setText(buyLabel);
         if (level !== undefined) {
             this.lvlBadge.setText(`Lv ${level}`);
         }

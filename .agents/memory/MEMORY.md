@@ -1,2 +1,3 @@
 - [Phaser 4 gravity config](phaser4-quirks.md) — requires `{ x: 0, y: N }` not just `{ y: N }` (Vector2Like requires both axes)
 - [Idle Balls game architecture](idle-balls-arch.md) — slot hit detection via Y-threshold (not physics), processedBalls Set prevents double-counting
+- [Idle Balls shop layout](idle-balls-shop-layout.md) — ShopItem.H=72, gap=2, 9 items max fit at y=36+i*74; HudPanel buttons at fixed Y coords; PrestigeWindow PH=640, itemH=56 fits 7 upgrades

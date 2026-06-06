@@ -24,4 +24,7 @@ export const EconomyConfig = {
 
     INSURANCE_BASE_COST: 350,
     INSURANCE_COST_MULT: 1.9,
+
+    BANK_BASE_COST: 1200,
+    BANK_COST_MULT: 2.2,
 };

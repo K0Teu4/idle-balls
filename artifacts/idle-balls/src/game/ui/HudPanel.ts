@@ -16,7 +16,7 @@ export class HudPanel {
     private messageText: Phaser.GameObjects.Text;
     private prestigeBtn: Phaser.GameObjects.Rectangle;
     private prestigeBtnText: Phaser.GameObjects.Text;
-    private prestigeReadyText: Phaser.GameObjects.Text;
+    private prestigeReqText: Phaser.GameObjects.Text;
     private prestigeReady = false;
 
     constructor(
@@ -27,7 +27,8 @@ export class HudPanel {
         onAPShop: () => void,
         onDailyBonus: () => void,
         onPrestige: () => void,
-        onSettings: () => void
+        onSettings: () => void,
+        onHelp: () => void
     ) {
         const depth = 30;
         const x = 5;
@@ -78,25 +79,22 @@ export class HudPanel {
             wordWrap: { width: W - 10 },
         }).setDepth(depth);
 
-        this.prestigeReadyText = scene.add.text(x + 5, 149, "", {
-            fontFamily: "'Courier New', monospace", fontSize: "11px", color: "#ff9944",
-        }).setDepth(depth);
-
         // Buttons
         new UIButton(scene, x, 166, W, 40, t("drop_ball"), onDrop, UIColors.button, "13px", depth);
-        new UIButton(scene, x, 212, W, 28, t("daily_bonus"), onDailyBonus, UIColors.buttonGold, "11px", depth);
-        new UIButton(scene, x, 244, W, 28, t("statistics"), onStats, UIColors.buttonGreen, "11px", depth);
-        new UIButton(scene, x, 276, W, 28, t("achievements"), onAchievements, UIColors.button, "11px", depth);
-        new UIButton(scene, x, 308, W, 28, t("ap_shop"), onAPShop, UIColors.buttonPurple, "11px", depth);
+        new UIButton(scene, x, 210, W, 26, t("daily_bonus"), onDailyBonus, UIColors.buttonGold, "11px", depth);
+        new UIButton(scene, x, 239, W, 26, t("statistics"), onStats, UIColors.buttonGreen, "11px", depth);
+        new UIButton(scene, x, 268, W, 26, t("achievements"), onAchievements, UIColors.button, "11px", depth);
+        new UIButton(scene, x, 297, W, 26, t("ap_shop"), onAPShop, UIColors.buttonPurple, "11px", depth);
 
-        scene.add.rectangle(x + W / 2, 344, W, 1, UIColors.panelBorder).setDepth(depth);
+        scene.add.rectangle(x + W / 2, 332, W, 1, UIColors.panelBorder).setDepth(depth);
 
-        new UIButton(scene, x, 348, W, 28, t("prestige_shop"), onPrestige, 0x7a3300, "11px", depth);
+        new UIButton(scene, x, 337, W, 26, t("prestige_shop"), onPrestige, 0x7a3300, "11px", depth);
 
-        this.prestigeBtn = scene.add.rectangle(x + W / 2, 392, W, 34, 0x333333)
+        // Prestige button
+        this.prestigeBtn = scene.add.rectangle(x + W / 2, 375, W, 30, 0x333333)
             .setDepth(depth).setStrokeStyle(2, 0x554422)
             .setInteractive({ useHandCursor: true });
-        this.prestigeBtnText = scene.add.text(x + W / 2, 392, t("prestige_btn"), {
+        this.prestigeBtnText = scene.add.text(x + W / 2, 375, t("prestige_btn"), {
             fontFamily: "'Courier New', monospace", fontSize: "14px",
             color: "#666666", fontStyle: "bold",
         }).setOrigin(0.5).setDepth(depth + 1);
@@ -108,8 +106,15 @@ export class HudPanel {
             this.prestigeBtn.setFillStyle(this.prestigeReady ? 0xcc5500 : 0x333333);
         });
 
-        scene.add.rectangle(x + W / 2, 418, W, 1, UIColors.panelBorder).setDepth(depth);
-        new UIButton(scene, x, 422, W, 26, t("settings"), onSettings, 0x2a3a2a, "11px", depth);
+        // Prestige requirement text (below the button)
+        this.prestigeReqText = scene.add.text(x + W / 2, 395, "", {
+            fontFamily: "'Courier New', monospace", fontSize: "10px", color: "#886644",
+        }).setOrigin(0.5).setDepth(depth);
+
+        scene.add.rectangle(x + W / 2, 410, W, 1, UIColors.panelBorder).setDepth(depth);
+
+        new UIButton(scene, x, 415, W, 26, t("settings"), onSettings, 0x2a3a2a, "11px", depth);
+        new UIButton(scene, x, 444, W, 26, t("help_btn"), onHelp, 0x1a2a3a, "11px", depth);
     }
 
     update(
@@ -124,7 +129,8 @@ export class HudPanel {
         comboBonus: number,
         comboFrac: number,
         canClaim: boolean,
-        canPrestige: boolean
+        canPrestige: boolean,
+        prestigeNeeded: number
     ): void {
         this.moneyText.setText(fmt(money));
         this.rateText.setText(fmtRate(rate));
@@ -133,21 +139,21 @@ export class HudPanel {
 
         this.prestigeReady = canPrestige;
         if (canPrestige) {
-            this.prestigeReadyText.setText("⭐ PRESTIGE READY!");
+            this.messageText.setText("");
             this.prestigeBtn.setFillStyle(0xcc5500);
             this.prestigeBtn.setStrokeStyle(2, 0xff8800);
             this.prestigeBtnText.setColor("#ffffff");
+            this.prestigeReqText.setText(t("hud_ready")).setColor("#ffaa44");
         } else {
-            this.prestigeReadyText.setText("");
             this.prestigeBtn.setFillStyle(0x333333);
             this.prestigeBtn.setStrokeStyle(2, 0x554422);
             this.prestigeBtnText.setColor("#666666");
+            this.prestigeReqText.setText(`${t("hud_need")}: $${fmt(prestigeNeeded)} ${t("hud_more")}`).setColor("#776655");
         }
 
         // Combo display
         if (combo > 1) {
             this.comboText.setText(`×${combo}  (+${comboBonus}%)`);
-            // Color the bar based on combo level
             let barColor: number;
             if (combo <= 6) barColor = 0x3388ff;
             else if (combo <= 20) barColor = 0x33ddcc;
@@ -163,14 +169,16 @@ export class HudPanel {
             this.comboBar.setFillStyle(UIColors.comboBar);
         }
 
-        const barW = Math.max(0, Math.min(W - 10, Math.floor(comboFrac * 242)));
+        const barW = Math.max(0, Math.floor(comboFrac * 242));
         this.comboBar.width = barW;
+
+        // Daily bonus flash
+        void canClaim;
     }
 
     showMessage(msg: string, color = UIColors.moneyNeg): void {
         this.messageText.setText(msg).setColor(color);
         this.messageText.setAlpha(1);
-        this.prestigeReadyText.setText("");
         this.messageText.scene.tweens.killTweensOf(this.messageText);
         this.messageText.scene.tweens.add({
             targets: this.messageText,
@@ -180,5 +188,3 @@ export class HudPanel {
         });
     }
 }
-
-const W = 242;

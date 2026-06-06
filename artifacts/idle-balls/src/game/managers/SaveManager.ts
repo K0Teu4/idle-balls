@@ -9,6 +9,7 @@ export interface SaveData {
     speedLevel: number;
     doubleStrikeLevel: number;
     insuranceLevel: number;
+    bankLevel: number;
     apShopLevels: Record<string, number>;
     totalMoneyEarned: number;
     totalBallsDropped: number;
@@ -63,6 +64,7 @@ export class SaveManager {
                 speedLevel: parsed.speedLevel ?? 0,
                 doubleStrikeLevel: parsed.doubleStrikeLevel ?? 0,
                 insuranceLevel: parsed.insuranceLevel ?? 0,
+                bankLevel: parsed.bankLevel ?? 0,
                 apShopLevels: parsed.apShopLevels ?? {},
                 totalMoneyEarned: parsed.totalMoneyEarned ?? 0,
                 totalBallsDropped: parsed.totalBallsDropped ?? 0,

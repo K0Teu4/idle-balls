@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { UIColors } from "./UIColors";
 import { PrestigeManager, PRESTIGE_UPGRADES } from "../managers/PrestigeManager";
+import { t } from "../i18n/Strings";
 import { fmt } from "../utils/NumberFormat";
 
 export class PrestigeWindow {
@@ -22,8 +23,8 @@ export class PrestigeWindow {
     private upgradeBuyBtns: Phaser.GameObjects.Rectangle[] = [];
 
     private readonly D = 520;
-    private readonly PW = 600;
-    private readonly PH = 580;
+    private readonly PW = 620;
+    private readonly PH = 640;
 
     constructor(scene: Phaser.Scene, prestige: PrestigeManager, onPrestige: () => void) {
         this.scene = scene;
@@ -76,49 +77,50 @@ export class PrestigeWindow {
 
         const sep2 = scene.add.rectangle(px, py - ph / 2 + 128, pw - 20, 1, UIColors.panelBorder)
             .setDepth(d + 1).setVisible(false);
-        const shopTitle = scene.add.text(px, py - ph / 2 + 142, "PRESTIGE SHOP", {
+        const shopTitle = scene.add.text(px, py - ph / 2 + 142, t("pw_prestige_shop"), {
             fontFamily: "'Courier New', monospace", fontSize: "13px", color: "#ff9944", fontStyle: "bold",
         }).setOrigin(0.5).setDepth(d + 1).setVisible(false);
 
         const upgradeTop = py - ph / 2 + 156;
-        const itemH = 66;
+        const itemH = 56;
         const ix = px - pw / 2 + 14;
         const iw = pw - 28;
 
         PRESTIGE_UPGRADES.forEach((upg, i) => {
-            const ay = upgradeTop + i * (itemH + 3);
+            const ay = upgradeTop + i * (itemH + 2);
 
             const bg = scene.add.rectangle(px, ay + itemH / 2, iw, itemH, UIColors.panelAlt)
                 .setDepth(d + 1).setStrokeStyle(1, 0x443322).setVisible(false);
             this.baseGroup.push(bg);
 
-            const nameT = scene.add.text(ix, ay + 5, upg.title, {
-                fontFamily: "'Courier New', monospace", fontSize: "13px", color: "#ff9944", fontStyle: "bold",
+            const nameT = scene.add.text(ix, ay + 4, upg.title, {
+                fontFamily: "'Courier New', monospace", fontSize: "12px", color: "#ff9944", fontStyle: "bold",
             }).setDepth(d + 2).setVisible(false);
             this.baseGroup.push(nameT);
 
-            const descT = scene.add.text(ix, ay + 22, upg.description, {
-                fontFamily: "'Courier New', monospace", fontSize: "11px", color: UIColors.textDim,
+            const descT = scene.add.text(ix, ay + 18, upg.description, {
+                fontFamily: "'Courier New', monospace", fontSize: "10px", color: UIColors.textDim,
+                wordWrap: { width: iw - 80 },
             }).setDepth(d + 2).setVisible(false);
             this.baseGroup.push(descT);
 
-            const infoT = scene.add.text(ix, ay + 38, "", {
-                fontFamily: "'Courier New', monospace", fontSize: "11px", color: UIColors.rate,
+            const infoT = scene.add.text(ix, ay + 31, "", {
+                fontFamily: "'Courier New', monospace", fontSize: "10px", color: UIColors.rate,
             }).setDepth(d + 2).setVisible(false);
             this.upgradeInfoTexts.push(infoT);
             this.baseGroup.push(infoT);
 
-            const costT = scene.add.text(ix, ay + 52, "", {
-                fontFamily: "'Courier New', monospace", fontSize: "11px", color: UIColors.apColor,
+            const costT = scene.add.text(ix, ay + 43, "", {
+                fontFamily: "'Courier New', monospace", fontSize: "10px", color: UIColors.apColor,
             }).setDepth(d + 2).setVisible(false);
             this.upgradeCostTexts.push(costT);
             this.baseGroup.push(costT);
 
-            const buyBtn = scene.add.rectangle(ix + iw - 44, ay + itemH / 2, 62, 26, 0x7a4400)
+            const buyBtn = scene.add.rectangle(ix + iw - 40, ay + itemH / 2, 60, 24, 0x7a4400)
                 .setDepth(d + 2).setStrokeStyle(1, 0xaa6600).setVisible(false)
                 .setInteractive({ useHandCursor: true });
-            const buyBtnT = scene.add.text(ix + iw - 44, ay + itemH / 2, "BUY", {
-                fontFamily: "'Courier New', monospace", fontSize: "12px", color: "#ffffff", fontStyle: "bold",
+            const buyBtnT = scene.add.text(ix + iw - 40, ay + itemH / 2, t("buy"), {
+                fontFamily: "'Courier New', monospace", fontSize: "11px", color: "#ffffff", fontStyle: "bold",
             }).setOrigin(0.5).setDepth(d + 3).setVisible(false);
             buyBtn.on("pointerup", () => this.onBuyUpgrade(upg.id));
             buyBtn.on("pointerover", () => buyBtn.setFillStyle(0xaa5500));

@@ -48,6 +48,22 @@ export const PRESTIGE_UPGRADES: PrestigeUpgrade[] = [
         ppCost: (l) => 2 + l * 3,
         maxLevel: 15,
     },
+    {
+        id: "pp_amplifier",
+        title: "PP Amplifier",
+        description: "+10% Prestige Points earned per prestige per level",
+        effectLine: (l) => l === 0 ? "No bonus yet" : `×${(1 + l * 0.1).toFixed(1)} PP on prestige`,
+        ppCost: (l) => 3 + l * 4,
+        maxLevel: 10,
+    },
+    {
+        id: "wealth_guard",
+        title: "Wealth Guard",
+        description: "Keep 5% of current money on prestige per level",
+        effectLine: (l) => l === 0 ? "No retention yet" : `Keep ${l * 5}% of money`,
+        ppCost: (l) => 4 + l * 5,
+        maxLevel: 10,
+    },
 ];
 
 function _fmtSmall(n: number): string {
@@ -96,7 +112,8 @@ export class PrestigeManager {
     }
 
     doPrestige(money: number): number {
-        const pp = this.getPreviewPP(money);
+        const basePP = this.getPreviewPP(money);
+        const pp = Math.round(basePP * this.getPPAmplifierMult());
         this.totalPP += pp;
         this.count++;
         return pp;
@@ -137,5 +154,13 @@ export class PrestigeManager {
 
     getAutoDropBoostPct(): number {
         return this.getLevel("overclock") * 5;
+    }
+
+    getPPAmplifierMult(): number {
+        return 1 + this.getLevel("pp_amplifier") * 0.1;
+    }
+
+    getMoneyRetentionPct(): number {
+        return this.getLevel("wealth_guard") * 5;
     }
 }

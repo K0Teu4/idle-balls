@@ -29,11 +29,13 @@ import { PrestigeManager } from "../managers/PrestigeManager";
 import { CritManager } from "../managers/CritManager";
 import { DoubleStrikeManager } from "../managers/DoubleStrikeManager";
 import { InsuranceManager } from "../managers/InsuranceManager";
+import { BankManager } from "../managers/BankManager";
 import { SaveManager, SaveData } from "../managers/SaveManager";
 import { SettingsManager } from "../managers/SettingsManager";
 
 import { HudPanel } from "../ui/HudPanel";
 import { ShopPanel } from "../ui/ShopPanel";
+import { HelpWindow } from "../ui/HelpWindow";
 import { StatisticsWindow } from "../ui/StatisticsWindow";
 import { AchievementsWindow } from "../ui/AchievementsWindow";
 import { APShopWindow } from "../ui/APShopWindow";
@@ -64,6 +66,7 @@ export class GameScene extends Phaser.Scene {
     private crit = new CritManager();
     private doubleStrike = new DoubleStrikeManager();
     private insurance = new InsuranceManager();
+    private bank = new BankManager();
 
     // Game objects
     private slots: Slot[] = [];
@@ -84,6 +87,7 @@ export class GameScene extends Phaser.Scene {
     private dailyBonusWindow!: DailyBonusWindow;
     private prestigeWindow!: PrestigeWindow;
     private settingsWindow!: SettingsWindow;
+    private helpWindow!: HelpWindow;
     private fpsText?: Phaser.GameObjects.Text;
 
     // Timing & throttling
@@ -135,7 +139,8 @@ export class GameScene extends Phaser.Scene {
             () => this.showAPShop(),
             () => this.showDailyBonus(),
             () => this.showPrestige(),
-            () => this.showSettings()
+            () => this.showSettings(),
+            () => this.helpWindow?.show()
         );
 
         this.shop = new ShopPanel(
@@ -147,7 +152,8 @@ export class GameScene extends Phaser.Scene {
             () => this.buy("luckyPeg"),
             () => this.buy("speed"),
             () => this.buy("doubleStrike"),
-            () => this.buy("insurance")
+            () => this.buy("insurance"),
+            () => this.buy("bank")
         );
 
         this.statsWindow = new StatisticsWindow(this);
@@ -156,6 +162,7 @@ export class GameScene extends Phaser.Scene {
         this.dailyBonusWindow = new DailyBonusWindow(this, () => this.claimDailyBonus());
         this.prestigeWindow = new PrestigeWindow(this, this.prestige, () => this.doPrestige());
         this.settingsWindow = new SettingsWindow(this, (key, val) => this.onSettingChanged(key, val));
+        this.helpWindow = new HelpWindow(this);
 
         this.refreshSlotLabels();
 
@@ -181,11 +188,20 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
-    update(time: number, _delta: number): void {
+    update(time: number, delta: number): void {
         this.frameCount++;
 
-        if (this.spaceKey && Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+        if (this.spaceKey?.isDown) {
             this.tryDropBall(time);
+        }
+
+        // Bank interest
+        if (this.bank.getLevel() > 0) {
+            const interest = this.bank.tick(this.economy.getMoney(), delta / 1000);
+            if (interest > 0) {
+                this.economy.addMoney(interest);
+                this.statistics.addMoney(interest);
+            }
         }
 
         // Always update physics
@@ -501,8 +517,8 @@ export class GameScene extends Phaser.Scene {
 
     private spawnBall(free = false): void {
         const cx = GAME_AREA.x + GAME_AREA.width / 2;
-        // Distribute across 35% of board width from center for varied ball paths
-        const spread = Math.floor(GAME_AREA.width * 0.35);
+        // Distribute across 18% of board width from center for varied ball paths
+        const spread = Math.floor(GAME_AREA.width * 0.18);
         const spawnX = cx + Phaser.Math.Between(-spread, spread);
         const spawnY = GAME_AREA.y + Phaser.Math.Between(18, 32);
 
@@ -564,6 +580,7 @@ export class GameScene extends Phaser.Scene {
             case "speed":         cost = this.speed.getCost(); break;
             case "doubleStrike":  cost = this.doubleStrike.getCost(); break;
             case "insurance":     cost = this.insurance.getCost(); break;
+            case "bank":          cost = this.bank.getCost(); break;
         }
 
         if (!this.economy.spendMoney(cost)) {
@@ -583,6 +600,7 @@ export class GameScene extends Phaser.Scene {
             case "speed":        this.speed.buy(); break;
             case "doubleStrike": this.doubleStrike.buy(); break;
             case "insurance":    this.insurance.buy(); break;
+            case "bank":         this.bank.buy(); break;
         }
 
         this.statistics.addPurchase();
@@ -610,6 +628,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
+        const moneyKept = this.economy.getMoney() * (this.prestige.getMoneyRetentionPct() / 100);
         const pp = this.prestige.doPrestige(this.economy.getMoney());
 
         // Apply retention to shop levels
@@ -624,9 +643,11 @@ export class GameScene extends Phaser.Scene {
         this.speed.setLevel(keep(this.speed.getLevel()));
         this.doubleStrike.setLevel(keep(this.doubleStrike.getLevel()));
         this.insurance.setLevel(keep(this.insurance.getLevel()));
+        this.bank.setLevel(keep(this.bank.getLevel()));
 
-        // Reset money
+        // Reset money (keep wealth_guard portion)
         this.economy.setMoney(this.prestige.getStartingMoney());
+        if (moneyKept > 0) this.economy.addMoney(moneyKept);
 
         // Reset auto dropper timing
         this.nextAutoDrop = this.time.now + 1000;
@@ -736,9 +757,10 @@ export class GameScene extends Phaser.Scene {
         const comboBonus = this.combo.getBonusPct();
         const maxCombo = 50 + this.apShop.getComboStackBonus();
         const comboFrac = combo / maxCombo;
+        const money = this.economy.getMoney();
 
         this.hud.update(
-            this.economy.getMoney(),
+            money,
             this.economy.getRate(),
             this.ballManager.getBallCount(),
             this.ballManager.getMaxBalls(),
@@ -749,7 +771,8 @@ export class GameScene extends Phaser.Scene {
             comboBonus,
             comboFrac,
             this.dailyBonus.canClaim(),
-            this.prestige.canPrestige(this.economy.getMoney())
+            this.prestige.canPrestige(money),
+            Math.max(0, this.prestige.getRequirement() - money)
         );
     }
 
@@ -782,6 +805,11 @@ export class GameScene extends Phaser.Scene {
             insLevel: this.insurance.getLevel(),
             insRefund: this.insurance.getRefundPct(),
             insCost: this.insurance.getCost(),
+            bankLevel: this.bank.getLevel(),
+            bankInterest: this.bank.getInterestPct(),
+            bankCost: this.bank.getCost(),
+            multiplierNext: Math.pow(1.2, this.multiplier.getLevel() + 1),
+            autoDropperNextRate: (this.autoDropper.getLevel() + 1) * autoBoost,
             money: this.economy.getMoney(),
         });
     }
@@ -820,6 +848,7 @@ export class GameScene extends Phaser.Scene {
         this.speed.setLevel(save.speedLevel);
         this.doubleStrike.setLevel(save.doubleStrikeLevel);
         this.insurance.setLevel(save.insuranceLevel);
+        this.bank.setLevel(save.bankLevel);
         this.apShop.setLevels(save.apShopLevels);
         this.statistics.setData({
             totalMoneyEarned: save.totalMoneyEarned,
@@ -862,6 +891,7 @@ export class GameScene extends Phaser.Scene {
             speedLevel: this.speed.getLevel(),
             doubleStrikeLevel: this.doubleStrike.getLevel(),
             insuranceLevel: this.insurance.getLevel(),
+            bankLevel: this.bank.getLevel(),
             apShopLevels: this.apShop.getLevels(),
             totalMoneyEarned: stats.totalMoneyEarned,
             totalBallsDropped: stats.totalBallsDropped,
